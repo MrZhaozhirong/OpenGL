@@ -12,7 +12,7 @@ import android.widget.Toast;
  * Created by ZZR on 2017/2/6.
  */
 
-public class FirstOpenGLActivity extends Activity {
+public class OpenGLActivity extends Activity {
 
     private GLSurfaceView glSurfaceView;
     private boolean rendererSet = false;
@@ -25,7 +25,7 @@ public class FirstOpenGLActivity extends Activity {
         if(glVersion > 0x20000){
             glSurfaceView.setEGLContextClientVersion(2);
 
-            glSurfaceView.setRenderer(new FirstOpenGLRenderer(this));
+            glSurfaceView.setRenderer(new OpenGLRenderer(this));
             rendererSet = true;
         } else {
             Toast.makeText(this, "this device does not support OpenGL ES 2.0",

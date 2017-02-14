@@ -8,7 +8,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <activity android:name="com.pixel.opengl.FirstOpenGLActivity"
+        <activity android:name="com.pixel.opengl.OpenGLActivity"
             android:screenOrientation="sensor">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
