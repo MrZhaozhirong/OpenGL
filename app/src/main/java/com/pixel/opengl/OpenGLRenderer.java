@@ -64,6 +64,7 @@ public class OpenGLRenderer implements GLSurfaceView.Renderer {
         this.context = context;
     }
 
+    //边界
     private final float leftBound = -0.5f;
     private final float rightBound= 0.5f;
     private final float farBound  = -0.8f;
@@ -71,8 +72,11 @@ public class OpenGLRenderer implements GLSurfaceView.Renderer {
     //木桩是否被按压
     private boolean malletPressed = false;
     //木桩的位置存储在这里
-    private Geometry.Point blueMalletPosition ;
-
+    private Geometry.Point blueMalletPosition;
+    private Geometry.Point previousBlueMalletPosition;
+    //记录冰球的位置、速度和方向
+    private Geometry.Point puckPosition;
+    private Geometry.Vector puckVector;
 
 
 
@@ -84,12 +88,15 @@ public class OpenGLRenderer implements GLSurfaceView.Renderer {
         textureShaderProgram=new TextureShaderProgram(context);
 
         table = new Table();
-        mallet= new Mallet(0.08f, 0.15f, 32);
-        puck = new Puck(0.06f, 0.02f, 32);
+        mallet= new Mallet(0.1f, 0.15f, 32);
+        puck = new Puck(0.07f, 0.02f, 32);
 
         textureId = TextureHelper.loadTexture(context, R.drawable.air_hockey_surface);
 
         blueMalletPosition = new Geometry.Point(0f, mallet.height / 2f, 0.4f);
+
+        puckPosition = new Geometry.Point(0f, puck.height/2f, 0f);
+        puckVector = new Geometry.Vector(0f, 0f, 0f);
     }
 
     @Override
@@ -112,14 +119,15 @@ public class OpenGLRenderer implements GLSurfaceView.Renderer {
                 0f, 1.2f, 2.2f,     //眼镜所在位置，场景中所有东西看起来都像是这个点观察
                 0f, 0f, 0f,         //眼镜正在看的点坐标
                 0f, 1f, 0f);        //刚才讨论的是眼镜，这个就是你的头指向的地方，upY=1意味这你的头笔直指向上方
+
+        multiplyMM(viewProjectionMatrix,0, projectionMatrix,0, viewMatrix,0);
+        //创建反转矩阵,用于二维点转三维坐标时候使用
+        invertM(invertedViewProjectionMatrix,0, viewProjectionMatrix,0);
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
         GLES20.glClear(GL_COLOR_BUFFER_BIT);
-        multiplyMM(viewProjectionMatrix,0, projectionMatrix,0, viewMatrix,0);
-        //创建反转矩阵
-        invertM(invertedViewProjectionMatrix,0, viewProjectionMatrix,0);
 
         positionTableInScene();
         textureShaderProgram.useProgram();
@@ -139,7 +147,34 @@ public class OpenGLRenderer implements GLSurfaceView.Renderer {
         //我们不需要定义两次object的数据，只需要在不同的位置和颜色重新画一个就好
         mallet.draw();
 
-        positionObjectInScene(0f, puck.height / 2f, 0f);
+        //positionObjectInScene(0f, puck.height / 2f, 0f);
+        puckPosition = puckPosition.translate(puckVector);
+        //增加边缘碰撞测试
+        if(puckPosition.x < leftBound + puck.radius ||
+                puckPosition.x > rightBound - puck.radius){
+            puckVector = new Geometry.Vector(-puckVector.x,puckVector.y,puckVector.z);
+            //模拟摩擦阻尼
+            puckVector = puckVector.scale(0.9f);
+        }
+        if(puckPosition.z < farBound + puck.radius ||
+                puckPosition.z > nearBound - puck.radius){
+            puckVector = new Geometry.Vector(puckVector.x, puckVector.y,-puckVector.z);
+            //模拟摩擦阻尼
+            puckVector = puckVector.scale(0.9f);
+        }
+        //加入木桩冰球的碰撞测试。这是我自己加上去的，非书本内容
+        float distance = Geometry.vectorBetween(blueMalletPosition, puckPosition).length();
+        if(distance < (puck.radius + mallet.radius)){
+            //puckVector = new Geometry.Vector(-puckVector.x,puckVector.y,-puckVector.z);
+            puckVector = Geometry.vectorCollisionAngle(puckPosition, blueMalletPosition, puckVector);
+            //模拟摩擦阻尼
+            puckVector = puckVector.scale(0.9f);
+        }
+        puckPosition = new Geometry.Point(
+                clamp(puckPosition.x, leftBound+puck.radius, rightBound-puck.radius),
+                puckPosition.y,
+                clamp(puckPosition.z, farBound+puck.radius, nearBound-puck.radius) );
+        positionObjectInScene(puckPosition.x, puckPosition.y, puckPosition.z);
         colorShaderProgram.setUniforms(modelViewProjectionMatrix, 0.8f, 0.8f, 1f);
         puck.bindData(colorShaderProgram);
         puck.draw();
@@ -215,13 +250,11 @@ public class OpenGLRenderer implements GLSurfaceView.Renderer {
     }
 
 
-
-
-
     public void handleTouchDrag(float normalizedX, float normalizedY) {
         if(LoggerConfig.ON){
             Log.w(TAG, "GLRenderer Drag normalizedX:"+normalizedX+" ## normalizedY:"+normalizedY);
         }
+        previousBlueMalletPosition = blueMalletPosition;
         if(malletPressed){
             Geometry.Ray ray = convertNormalized2DPointToRay(normalizedX, normalizedY);
             // Define plane respresenting table
@@ -229,15 +262,24 @@ public class OpenGLRenderer implements GLSurfaceView.Renderer {
                     new Geometry.Plane(new Geometry.Point(0f, 0f, 0f), new Geometry.Vector(0, 1, 0));
             Geometry.Point point = Geometry.intersectionPoint(ray, plane);
 
-            //blueMalletPosition = new Geometry.Point(point.x, mallet.height/2f, point.z);
+//            blueMalletPosition = new Geometry.Point(point.x, mallet.height/2f, point.z);
             blueMalletPosition = new Geometry.Point(
                     clamp(point.x, leftBound+mallet.radius, rightBound-mallet.radius),
                     mallet.height / 2f,
-                    clamp(point.z, farBound+mallet.radius, nearBound-mallet.radius)   );
+                    clamp(point.z, /*farBound+mallet.radius*/0+mallet.radius, nearBound-mallet.radius) );
+
+            //加入木桩冰球的碰撞测试。
+            float distance = Geometry.vectorBetween(blueMalletPosition, puckPosition).length();
+            if(distance < (puck.radius + mallet.radius)){
+                //记录方向
+                puckVector = Geometry.vectorBetween(previousBlueMalletPosition, blueMalletPosition);
+            }
         }
     }
 
     private float clamp(float value, float min, float max){
         return Math.min(max, Math.max(value,min));
     }
+
+
 }

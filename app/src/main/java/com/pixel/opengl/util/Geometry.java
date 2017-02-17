@@ -4,6 +4,7 @@ package com.pixel.opengl.util;
 import android.util.FloatMath;
 import android.util.Log;
 
+import static android.R.attr.angle;
 import static android.content.ContentValues.TAG;
 
 /**
@@ -150,6 +151,40 @@ public class Geometry {
                 to.x - from.x,
                 to.y - from.y,
                 to.z - from.z);
+    }
+
+    /**
+     * 圆、球体 碰撞模型
+     * @param active 主动去撞的
+     * @param passive 被撞的
+     * @return
+     */
+    public static Vector vectorCollisionAngle(Point active, Point passive, Vector activeVector){
+        Vector normalVector = vectorBetween(passive, active);
+        float dotProduct = activeVector.dotProduct(normalVector);
+        float mathcos = dotProduct / (normalVector.length() * activeVector.length());
+        double angle = Math.acos(mathcos) / ((float)Math.PI * 2f) *360 ;
+        double v = dotProduct / Math.cos(angle) / activeVector.length();
+
+        if(LoggerConfig.ON){
+            Log.w(TAG, "angle : "+angle);
+            Log.w(TAG, "v : "+v);
+        }
+
+        float x = activeVector.x;
+        float z = activeVector.z;
+        if(angle < 45){
+            z = -z;
+        }else if(angle < 135){
+            x = -x;
+        }else if(angle < 225){
+            z = -z;
+        }else if(angle < 315){
+            x = -x;
+        }else if(angle < 360){
+            z = -z;
+        }
+        return new Vector(x,activeVector.y,z);
     }
 
     /**
