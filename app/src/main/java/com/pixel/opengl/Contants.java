@@ -6,4 +6,6 @@ package com.pixel.opengl;
 
 public class Contants {
     public static final int BYTES_PER_FLOAT = 4;
+
+    public static final int BYTES_PER_SHORT = 2;
 }
