@@ -13,4 +13,7 @@ void main()
     v_Color = a_Position;
 
     gl_Position = u_Matrix * vec4(a_Position, 1.0);
+
+
+
 }
