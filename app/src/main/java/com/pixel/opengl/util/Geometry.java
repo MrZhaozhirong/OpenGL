@@ -68,10 +68,10 @@ public class Geometry {
          * @param other vector
          */
         public Vector crossProduct(Vector other) {
-            float Vx = (y * other.z) - (z * other.y);
-            float Vy = (z * other.x) - (x * other.z);
-            float Vz = (x * other.y) - (y * other.x);
-            return new Vector(Vx,Vy,Vz);
+            return new Vector(
+                    (y * other.z) - (z * other.y),
+                    (z * other.x) - (x * other.z),
+                    (x * other.y) - (y * other.x));
         }
 
         public float length() {
@@ -85,6 +85,14 @@ public class Geometry {
 
         public Vector scale(float scale) {
             return new Vector(x*scale,y*scale,z*scale);
+        }
+
+        /**
+         * 交叉乘积之后的平面 的 再求法向量
+         * @return
+         */
+        public Vector normalize() {
+            return scale( 1f/length() );
         }
     }
 

@@ -9,6 +9,7 @@ import com.particles.opengl.objects.Hightmap;
 import com.particles.opengl.objects.ParticleShooter;
 import com.particles.opengl.objects.ParticleSystem;
 import com.particles.opengl.objects.Skybox;
+import com.particles.opengl.programs.HightmapEyespaceShaderProgram;
 import com.particles.opengl.programs.HightmapShaderProgram;
 import com.particles.opengl.programs.ParticleShaderProgram;
 import com.particles.opengl.programs.SkyboxShaderProgram;
@@ -27,11 +28,14 @@ import static android.opengl.GLES20.glClear;
 import static android.opengl.GLES20.glClearColor;
 import static android.opengl.GLES20.glEnable;
 import static android.opengl.GLES20.glViewport;
+import static android.opengl.Matrix.invertM;
 import static android.opengl.Matrix.multiplyMM;
+import static android.opengl.Matrix.multiplyMV;
 import static android.opengl.Matrix.rotateM;
 import static android.opengl.Matrix.scaleM;
 import static android.opengl.Matrix.setIdentityM;
 import static android.opengl.Matrix.translateM;
+import static android.opengl.Matrix.transposeM;
 
 /**
  * Created by ZZR on 2017/2/17.
@@ -43,14 +47,14 @@ public class ParticlesRenderer implements GLSurfaceView.Renderer {
 
     private final float[] projectionMartix = new float[16];
     private final float[] viewMartix = new float[16];
-    private final float[] viewMartixForSkybox = new float[16];
+    private final float[] viewMatrixForSkybox = new float[16];
 
     private final float[] modelMatrix = new float[16];
     private final float[] tempMatrix = new float[16];
     private final float[] modelViewProjectionMatrix = new float[16];
 
-    final float angleVarianceInDegrees = 8f;
-    final float speedVariance = 1;
+    private final float[] modelViewMatrix = new float[16];
+    private final float[] itModelViewMatrix = new float[16];
 
     private long globalStartTime;
 
@@ -66,15 +70,31 @@ public class ParticlesRenderer implements GLSurfaceView.Renderer {
     private int skyboxTexture;
 
     private Hightmap hightmap;
-    private HightmapShaderProgram hightmapShaderProgram;
+    //private HightmapShaderProgram hightmapShaderProgram;
+    private HightmapEyespaceShaderProgram hightmapEyespaceShaderProgram;
 
     public ParticlesRenderer(Context context) {
         this.context = context;
     }
 
-
-
-
+    //白天光源
+    //private final Geometry.Vector vectorToLight = new Geometry.Vector(0.61f, 0.64f, -0.47f).normalize();
+    //夜晚光源
+    //private final Geometry.Vector vectorToLight = new Geometry.Vector(0.30f, 0.35f, -0.89f).normalize();
+    //增加喷泉点光源
+    private final float[] vectorToLight = {0.30f, 0.35f, -0.89f, 0.0f};
+    private final float[] pointLightPositions = new float[]
+            {
+                    -1f,1f,0f, 1f,
+                    0f,1f,0f, 1f,
+                    1f,1f,0f, 1f
+            };
+    private final float[] pointLightColors = new float[]
+            {
+                    1.00f, 0.20f, 0.02f,
+                    0.02f, 0.25f, 0.02f,
+                    0.02f, 0.20f, 1.00f
+            };
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
@@ -91,9 +111,11 @@ public class ParticlesRenderer implements GLSurfaceView.Renderer {
         globalStartTime = System.nanoTime();
 
         final Geometry.Vector particleDirection = new Geometry.Vector(0.0f, 1.0f, 0.0f);
+        final float angleVarianceInDegrees = 10f;
+        final float speedVariance = 1f;
 
         redParticleShooter = new ParticleShooter(
-                new Geometry.Point(-0.5f, 0f, 0f),
+                new Geometry.Point(-1f, 0f, 0f),
                 particleDirection, Color.rgb(255, 50, 5),
                 angleVarianceInDegrees,speedVariance);
         greenParticleShooter = new ParticleShooter(
@@ -101,7 +123,7 @@ public class ParticlesRenderer implements GLSurfaceView.Renderer {
                 particleDirection, Color.rgb(25, 255, 25),
                 angleVarianceInDegrees,speedVariance);
         blueParticleShooter = new ParticleShooter(
-                new Geometry.Point(0.5f, 0f, 0f),
+                new Geometry.Point(1f, 0f, 0f),
                 particleDirection, Color.rgb(5, 50, 255),
                 angleVarianceInDegrees,speedVariance);
 
@@ -110,14 +132,22 @@ public class ParticlesRenderer implements GLSurfaceView.Renderer {
         skyboxShaderProgram = new SkyboxShaderProgram(context,
                 R.raw.skybox_vertex_shader, R.raw.skybox_fragment_shader);
         skybox = new Skybox();
+        //白天的盒子
         skyboxTexture = TextureHelper.loadCubMap(context,
                 new int[]{ R.drawable.left, R.drawable.right,
                         R.drawable.bottom, R.drawable.top,
                         R.drawable.front, R.drawable.back});
+        //夜晚的盒子
+//        skyboxTexture = TextureHelper.loadCubMap(context,
+//                new int[]{ R.drawable.night_left, R.drawable.night_right,
+//                        R.drawable.night_bottom, R.drawable.night_top,
+//                        R.drawable.night_front, R.drawable.night_back});
 
         BitmapDrawable drawable = (BitmapDrawable) context.getResources().getDrawable(R.drawable.heightmap);
         hightmap = new Hightmap(drawable.getBitmap());
-        hightmapShaderProgram = new HightmapShaderProgram(context,R.raw.hightmap_vertex_shader,R.raw.hightmap_fragment_shader);
+        //hightmapShaderProgram = new HightmapShaderProgram(context,R.raw.hightmap_vertex_shader,R.raw.hightmap_fragment_shader);
+        hightmapEyespaceShaderProgram = new HightmapEyespaceShaderProgram(context,
+                R.raw.hightmap_eyespace_vertex_shader,R.raw.hightmap_fragment_shader);
     }
 
     @Override
@@ -156,9 +186,25 @@ public class ParticlesRenderer implements GLSurfaceView.Renderer {
         setIdentityM(modelMatrix, 0);
         scaleM(modelMatrix,0, 100f,10f,100f);
         updateMvpMatrix();
-        hightmapShaderProgram.useProgram();
-        hightmapShaderProgram.setUniform(modelViewProjectionMatrix);
-        hightmap.bindData(hightmapShaderProgram);
+        //hightmapShaderProgram .useProgram();
+        //hightmapShaderProgram.setUniform(modelViewProjectionMatrix);
+        //13增加光照
+        //hightmapShaderProgram.setUniforms(modelViewProjectionMatrix, vectorToLight);
+
+        //13.3增加喷泉点光
+        hightmapEyespaceShaderProgram.useProgram();
+        final float[] vectorToLightInEyeSpace = new float[4];
+        final float[] pointPositionsInEyeSpace = new float[12];
+        multiplyMV(vectorToLightInEyeSpace,0, viewMartix,0, vectorToLight,0);
+        multiplyMV(pointPositionsInEyeSpace,0, viewMartix,0, pointLightPositions,0);
+        multiplyMV(pointPositionsInEyeSpace,4, viewMartix,0, pointLightPositions,4);
+        multiplyMV(pointPositionsInEyeSpace,8, viewMartix,0, pointLightPositions,8);
+
+        hightmapEyespaceShaderProgram.setUniforms(modelViewMatrix,itModelViewMatrix,
+                modelViewProjectionMatrix, vectorToLightInEyeSpace,
+                pointPositionsInEyeSpace, pointLightColors);
+
+        hightmap.bindData(hightmapEyespaceShaderProgram);
         hightmap.draw();
     }
 
@@ -191,8 +237,15 @@ public class ParticlesRenderer implements GLSurfaceView.Renderer {
     }
 
     private void updateMvpMatrix(){
-        multiplyMM(tempMatrix,0, viewMartix,0, modelMatrix,0);
-        multiplyMM(modelViewProjectionMatrix,0, projectionMartix,0, tempMatrix,0);
+//        multiplyMM(tempMatrix,0, viewMartix,0, modelMatrix,0);
+//        multiplyMM(modelViewProjectionMatrix,0, projectionMartix,0, tempMatrix,0);
+        //点光源，通用做法就是倒置模型视图矩阵，再转置这个倒置的矩阵，再用位置法线向量*这个矩阵
+        multiplyMM(modelViewMatrix,0, viewMartix,0, modelMatrix,0);
+        invertM(tempMatrix,0, modelViewMatrix,0);   //倒置
+        transposeM(itModelViewMatrix,0, tempMatrix,0);//转置
+        multiplyMM(modelViewProjectionMatrix,0,
+                projectionMartix,0,
+                modelViewMatrix,0);
     }
 
     private void drawSkybox() {
@@ -215,7 +268,7 @@ public class ParticlesRenderer implements GLSurfaceView.Renderer {
     }
 
     private void updateMvpMatirxForSkybox(){
-        multiplyMM(tempMatrix,0, viewMartixForSkybox,0, modelMatrix,0);
+        multiplyMM(tempMatrix,0, viewMatrixForSkybox,0, modelMatrix,0);
         multiplyMM(modelViewProjectionMatrix,0, projectionMartix,0, tempMatrix,0);
     }
 
@@ -237,7 +290,7 @@ public class ParticlesRenderer implements GLSurfaceView.Renderer {
         setIdentityM(viewMartix, 0);
         rotateM(viewMartix,0, -yRotation, 1f,0f,0f);
         rotateM(viewMartix,0, -xRotation, 0f,1f,0f);
-        System.arraycopy(viewMartix,0, viewMartixForSkybox,0, viewMartix.length);
-        translateM(viewMartix,0, 0f,-1f,-3.5f);
+        System.arraycopy(viewMartix,0, viewMatrixForSkybox,0, viewMartix.length);
+        translateM(viewMartix,0, 0f,-1f,-5f);
     }
 }
