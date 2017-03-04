@@ -25,7 +25,7 @@ void main()
 
     float diffuse = max(dot(scaledNormal, u_VectorToLight), 0.0);
 
-    diffuse *= 0.3;     //夜晚削弱漫反射
+    //diffuse *= 0.3;     //夜晚削弱漫反射
 
     v_Color *= diffuse;
 

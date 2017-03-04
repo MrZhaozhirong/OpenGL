@@ -70,31 +70,31 @@ public class ParticlesRenderer implements GLSurfaceView.Renderer {
     private int skyboxTexture;
 
     private Hightmap hightmap;
-    //private HightmapShaderProgram hightmapShaderProgram;
-    private HightmapEyespaceShaderProgram hightmapEyespaceShaderProgram;
+    private HightmapShaderProgram hightmapShaderProgram;
+    //private HightmapEyespaceShaderProgram hightmapEyespaceShaderProgram;
 
     public ParticlesRenderer(Context context) {
         this.context = context;
     }
 
     //白天光源
-    //private final Geometry.Vector vectorToLight = new Geometry.Vector(0.61f, 0.64f, -0.47f).normalize();
+    private final Geometry.Vector vectorToLight = new Geometry.Vector(0.61f, 0.64f, -0.47f).normalize();
     //夜晚光源
     //private final Geometry.Vector vectorToLight = new Geometry.Vector(0.30f, 0.35f, -0.89f).normalize();
     //增加喷泉点光源
-    private final float[] vectorToLight = {0.30f, 0.35f, -0.89f, 0.0f};
-    private final float[] pointLightPositions = new float[]
-            {
-                    -1f,1f,0f, 1f,
-                    0f,1f,0f, 1f,
-                    1f,1f,0f, 1f
-            };
-    private final float[] pointLightColors = new float[]
-            {
-                    1.00f, 0.20f, 0.02f,
-                    0.02f, 0.25f, 0.02f,
-                    0.02f, 0.20f, 1.00f
-            };
+//    private final float[] vectorToLight = {0.30f, 0.35f, -0.89f, 0.0f};
+//    private final float[] pointLightPositions = new float[]
+//            {
+//                    -1f,1f,0f, 1f,
+//                    0f,1f,0f, 1f,
+//                    1f,1f,0f, 1f
+//            };
+//    private final float[] pointLightColors = new float[]
+//            {
+//                    1.00f, 0.20f, 0.02f,
+//                    0.02f, 0.25f, 0.02f,
+//                    0.02f, 0.20f, 1.00f
+//            };
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
@@ -145,9 +145,9 @@ public class ParticlesRenderer implements GLSurfaceView.Renderer {
 
         BitmapDrawable drawable = (BitmapDrawable) context.getResources().getDrawable(R.drawable.heightmap);
         hightmap = new Hightmap(drawable.getBitmap());
-        //hightmapShaderProgram = new HightmapShaderProgram(context,R.raw.hightmap_vertex_shader,R.raw.hightmap_fragment_shader);
-        hightmapEyespaceShaderProgram = new HightmapEyespaceShaderProgram(context,
-                R.raw.hightmap_eyespace_vertex_shader,R.raw.hightmap_fragment_shader);
+        hightmapShaderProgram = new HightmapShaderProgram(context,R.raw.hightmap_vertex_shader,R.raw.hightmap_fragment_shader);
+        //hightmapEyespaceShaderProgram = new HightmapEyespaceShaderProgram(context,
+        //        R.raw.hightmap_eyespace_vertex_shader,R.raw.hightmap_fragment_shader);
     }
 
     @Override
@@ -186,25 +186,24 @@ public class ParticlesRenderer implements GLSurfaceView.Renderer {
         setIdentityM(modelMatrix, 0);
         scaleM(modelMatrix,0, 100f,10f,100f);
         updateMvpMatrix();
-        //hightmapShaderProgram .useProgram();
+        hightmapShaderProgram .useProgram();
         //hightmapShaderProgram.setUniform(modelViewProjectionMatrix);
         //13增加光照
-        //hightmapShaderProgram.setUniforms(modelViewProjectionMatrix, vectorToLight);
+        hightmapShaderProgram.setUniforms(modelViewProjectionMatrix, vectorToLight);
 
         //13.3增加喷泉点光
-        hightmapEyespaceShaderProgram.useProgram();
-        final float[] vectorToLightInEyeSpace = new float[4];
-        final float[] pointPositionsInEyeSpace = new float[12];
-        multiplyMV(vectorToLightInEyeSpace,0, viewMartix,0, vectorToLight,0);
-        multiplyMV(pointPositionsInEyeSpace,0, viewMartix,0, pointLightPositions,0);
-        multiplyMV(pointPositionsInEyeSpace,4, viewMartix,0, pointLightPositions,4);
-        multiplyMV(pointPositionsInEyeSpace,8, viewMartix,0, pointLightPositions,8);
+        //hightmapEyespaceShaderProgram.useProgram();
+        //final float[] vectorToLightInEyeSpace = new float[4];
+        //final float[] pointPositionsInEyeSpace = new float[12];
+        //multiplyMV(vectorToLightInEyeSpace,0, viewMartix,0, vectorToLight,0);
+        //multiplyMV(pointPositionsInEyeSpace,0, viewMartix,0, pointLightPositions,0);
+        //multiplyMV(pointPositionsInEyeSpace,4, viewMartix,0, pointLightPositions,4);
+        //multiplyMV(pointPositionsInEyeSpace,8, viewMartix,0, pointLightPositions,8);
+        //hightmapEyespaceShaderProgram.setUniforms(modelViewMatrix,itModelViewMatrix,
+        //        modelViewProjectionMatrix, vectorToLightInEyeSpace,
+        //        pointPositionsInEyeSpace, pointLightColors);
 
-        hightmapEyespaceShaderProgram.setUniforms(modelViewMatrix,itModelViewMatrix,
-                modelViewProjectionMatrix, vectorToLightInEyeSpace,
-                pointPositionsInEyeSpace, pointLightColors);
-
-        hightmap.bindData(hightmapEyespaceShaderProgram);
+        hightmap.bindData(hightmapShaderProgram);
         hightmap.draw();
     }
 
