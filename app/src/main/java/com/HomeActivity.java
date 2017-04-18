@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
+import com.earth.opengl.EarthActivity;
 import com.particles.opengl.ParticlesActivity;
 import com.pixel.opengl.OpenGLActivity;
 import com.pixel.opengl.R;
@@ -24,6 +25,7 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
 
         findViewById(R.id.particles).setOnClickListener(this);
         findViewById(R.id.table_ball).setOnClickListener(this);
+        findViewById(R.id.earth).setOnClickListener(this);
     }
 
     @Override
@@ -34,6 +36,9 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.table_ball:
                 startActivity(new Intent(HomeActivity.this,OpenGLActivity.class));
+                break;
+            case R.id.earth:
+                startActivity(new Intent(HomeActivity.this,EarthActivity.class));
                 break;
         }
     }

@@ -30,6 +30,13 @@
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
         </activity>
+
+        <activity android:name="com.earth.opengl.EarthActivity"
+                  android:screenOrientation="sensor">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>
