@@ -1,10 +1,8 @@
 package com.pixel.opengl.util;
 
 
-import android.util.FloatMath;
 import android.util.Log;
 
-import static android.R.attr.angle;
 import static android.content.ContentValues.TAG;
 
 /**
@@ -100,7 +98,7 @@ public class Geometry {
      * 中心点
      */
     public static class Point{
-        public final float x,y,z;
+        public float x,y,z;
         public Point(float x, float y, float z ){
             this.x = x;
             this.y = y;

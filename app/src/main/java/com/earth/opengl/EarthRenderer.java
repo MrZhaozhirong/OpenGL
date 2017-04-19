@@ -33,6 +33,7 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
         //打开深度检测
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         //打开背面剪裁
+        GLES20.glCullFace(GLES20.GL_BACK);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
         ball = new Ball(context);
     }
@@ -40,19 +41,26 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         GLES20.glViewport(0,0,width,height);
-        float ratio = (float) width / height;
+        float ratio = (float) width / (float) height;
         // 调用此方法计算产生透视投影矩阵
-        MatrixHelper.setProjectFrustum(-ratio,ratio, -1, 1, 20, 100);
+        MatrixHelper.setProjectFrustum(-ratio,ratio, -1, 1, 1f, 100f);
         // 调用此方法产生摄像机9参数位置矩阵
-        MatrixHelper.setCamera(0, 0, 30, //摄像机位置
+        MatrixHelper.setCamera(0, 0, 0f, //摄像机位置
                             0f, 0f, 0f, //摄像机目标视点
                             0f, 1.0f, 0.0f);//摄像机头顶方向向量
+
+//        MatrixHelper.setCamera(0, 0, 0.1f, //摄像机位置
+//                            0f, 0f, -1.0f, //摄像机目标视点
+//                            0f, 1.0f, 0.0f);//摄像机头顶方向向量
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
         //清除深度缓冲与颜色缓冲
         GLES20.glClear( GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
+        MatrixHelper.setCamera(ball.camera.x, ball.camera.y, ball.camera.z, //摄像机位置
+                0f, 0f, 0f, //摄像机目标视点
+                ball.cameraUp.x, ball.cameraUp.y, ball.cameraUp.z);//摄像机头顶方向向量
         ball.draw();
     }
 
@@ -69,15 +77,26 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
     }
 
     public void handleTouchDrag(float x, float y) {
-        if(ball!=null){
-            float offsetX = ball.mLastX - x;
-            float offsetY = ball.mLastY - y;
-            MatrixHelper.rotate(offsetX/ball.step, 0, 1, 0);
-            MatrixHelper.rotate(offsetY/ball.step, 1, 0, 0);
-            if(LoggerConfig.ON){
-                Log.w(TAG, "offsetX : "+offsetX);
-                Log.w(TAG, "offsetY : "+offsetY);
-            }
+        if(ball != null){
+            float offsetY = (ball.mLastY - y)%360;
+            float offsetVerticalAngle = (float) Math.toRadians(offsetY);
+            float offsetX = (ball.mLastX - x)%360;
+            float offsetHorizontalAngle = (float) Math.toRadians(offsetX);
+            ball.mVerticalAngle += offsetVerticalAngle;
+            ball.mHorizontalAngle += offsetHorizontalAngle;
+
+            double y0 = Math.sin(ball.mVerticalAngle) * ball.cameraWatchRadius;
+            double z0 = Math.cos(ball.mVerticalAngle) * ball.cameraWatchRadius;
+            ball.camera.y = (float) y0;
+            ball.camera.z = (float) z0;
+
+//            double x0 = Math.cos(ball.mHorizontalAngle) * ball.cameraWatchRadius ;
+//            double z0 = Math.sin(ball.mHorizontalAngle) * ball.cameraWatchRadius ;
+//            ball.camera.x = (float) x0;
+//            ball.camera.z = (float) z0;
+
+            ball.mLastX = x;
+            ball.mLastY = y;
         }
     }
 
@@ -86,7 +105,7 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
         if(LoggerConfig.ON){
             Log.w(TAG, "MultiTouch scale: "+scale);
         }
-        if(isZoom){
+        if(!isZoom){
             MatrixHelper.scale(1/scale, 1/scale, 1/scale);
         }else{
             MatrixHelper.scale(scale, scale, scale);

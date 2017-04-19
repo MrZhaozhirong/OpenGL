@@ -10,30 +10,30 @@ public class MatrixHelper {
 
     private static float[] mProjectionMatrix = new float[16];// 4x4矩阵 存储投影矩阵
     private static float[] mViewMatrix = new float[16];// 摄像机位置朝向9参数矩阵
-    private static float[] mTransformMatrix = new float[16];// 平移变换矩阵
+    private static float[] mModelMatrix = new float[16];// 模型变换矩阵
 
     static{
         //初始化为单位矩阵
-        Matrix.setIdentityM(mTransformMatrix, 0);
+        Matrix.setIdentityM(mModelMatrix, 0);
         Matrix.setIdentityM(mViewMatrix, 0);
         Matrix.setIdentityM(mProjectionMatrix, 0);
     }
 
     public static void translate(float x,float y,float z)
     {//设置沿xyz轴移动
-        Matrix.translateM(mTransformMatrix, 0, x, y, z);
+        Matrix.translateM(mModelMatrix, 0, x, y, z);
     }
 
     //旋转变换
     public static void rotate(float angle, float x, float y, float z)
     {// 设置绕xyz轴移动
-        Matrix.rotateM(mTransformMatrix, 0, angle, x, y, z);
+        Matrix.rotateM(mModelMatrix, 0, angle, x, y, z);
     }
 
     //缩放变换
     public static void scale(float x,float y,float z)
     {
-        Matrix.scaleM(mTransformMatrix,0, x, y, z);
+        Matrix.scaleM(mModelMatrix,0, x, y, z);
     }
 
     // 设置摄像机
@@ -60,13 +60,14 @@ public class MatrixHelper {
                                          float far // far面距离
     ) {
         Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
+        //perspectiveM(mProjectionMatrix, 45, right, 0.1f, 100f);
     }
 
     // 获取具体物体的总变换矩阵
     static float[] mMVPMatrix = new float[16];
 
     public static float[] getFinalMatrix() {
-        Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mTransformMatrix, 0);
+        Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
         return mMVPMatrix;
     }

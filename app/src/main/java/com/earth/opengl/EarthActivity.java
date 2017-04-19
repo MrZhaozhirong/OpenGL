@@ -24,7 +24,7 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
     private GLSurfaceView glSurfaceView;
     private boolean rendererSet = false;
 
-    final EarthRenderer openGLRenderer = new EarthRenderer(this);
+    final EarthRenderer earthRenderer = new EarthRenderer(this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +37,7 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
         int glVersion = getGLVersion();
         if(glVersion > 0x20000){
             glSurfaceView.setEGLContextClientVersion(2);
-            glSurfaceView.setRenderer(openGLRenderer);
+            glSurfaceView.setRenderer(earthRenderer);
             rendererSet = true;
         } else {
             Toast.makeText(this, "this device does not support OpenGL ES 2.0",
@@ -103,7 +103,7 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                 glSurfaceView.queueEvent(new Runnable() {
                     @Override
                     public void run() {
-                        openGLRenderer.handleTouchDown(x, y);
+                        earthRenderer.handleTouchDown(x, y);
                     }
                 });
             }
@@ -116,7 +116,7 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                     glSurfaceView.queueEvent(new Runnable() {
                         @Override
                         public void run() {
-                            openGLRenderer.handleMultiTouch(distance,true);
+                            earthRenderer.handleMultiTouch(distance,true);
                         }
                     });
                     oldDist = newDist;
@@ -126,7 +126,7 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                     glSurfaceView.queueEvent(new Runnable() {
                         @Override
                         public void run() {
-                            openGLRenderer.handleMultiTouch(distance,false);
+                            earthRenderer.handleMultiTouch(distance,false);
                         }
                     });
                     oldDist = newDist;
@@ -135,7 +135,7 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                 glSurfaceView.queueEvent(new Runnable() {
                     @Override
                     public void run() {
-                        openGLRenderer.handleTouchDrag(x,y);
+                        earthRenderer.handleTouchDrag(x,y);
                     }
                 });
             }
