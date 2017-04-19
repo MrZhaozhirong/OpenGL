@@ -78,12 +78,31 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
 
     public void handleTouchDrag(float x, float y) {
         if(ball != null){
-            float offsetY = (ball.mLastY - y)%360;
+//            float offsetX = ball.mLastX - x;
+//            float offsetY = ball.mLastY - y;
+//            MatrixHelper.rotate(offsetX/ball.step, 0, 1, 0);
+//            MatrixHelper.rotate(offsetY/ball.step, 1, 0, 0);
+//---------------------移动摄像机----------------------------------------------------
+            float offsetY = (ball.mLastY - y);
             float offsetVerticalAngle = (float) Math.toRadians(offsetY);
-            float offsetX = (ball.mLastX - x)%360;
+            float offsetX = (ball.mLastX - x);
             float offsetHorizontalAngle = (float) Math.toRadians(offsetX);
             ball.mVerticalAngle += offsetVerticalAngle;
             ball.mHorizontalAngle += offsetHorizontalAngle;
+            if(LoggerConfig.ON){
+                Log.w(TAG, "ball.mVerticalAngle : "+ball.mVerticalAngle);
+                Log.w(TAG, "ball.mHorizontalAngle : "+ball.mHorizontalAngle);
+            }
+
+            double v = ball.mVerticalAngle % (2 * Math.PI);
+            v = Math.abs(v);
+            if(v < Math.PI/2){
+                ball.cameraUp.y = 1;
+            }else if(v < 3*Math.PI/2){
+                ball.cameraUp.y = -1;
+            }else if(v < 2*Math.PI){
+                ball.cameraUp.y = 1;
+            }
 
             double y0 = Math.sin(ball.mVerticalAngle) * ball.cameraWatchRadius;
             double z0 = Math.cos(ball.mVerticalAngle) * ball.cameraWatchRadius;
