@@ -9,7 +9,6 @@ import com.earth.opengl.utils.ShaderHelper;
 import com.earth.opengl.utils.TextResourceReader;
 import com.earth.opengl.utils.TextureHelper;
 import com.pixel.opengl.R;
-import com.pixel.opengl.util.Geometry;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -23,19 +22,20 @@ import java.util.ArrayList;
  */
 
 public class Ball {
-    public float cameraWatchRadius = 1f;
-    public Geometry.Point camera = new Geometry.Point(0f,0f,1.0f);
-    public Geometry.Point cameraUp = new Geometry.Point(0f,1.0f,0f);
     public float mLastX;
     public float mLastY;
-    public float step=10;
-    public float mHorizontalAngle =90;
-    public float mVerticalAngle = 0;
+    public float mfingerRotationX = 0;
+    public float mfingerRotationY = 0;
+    public final static float SCALE_MAX_VALUE=1.0f;
+    public final static float SCALE_MIN_VALUE=-1.0f;
+    public final static double overture = 45;
+    public float scale = 0.0f;
+    public float currentScale = 0.0f;
     //************************************************************
     private final Context context;
     final int angleSpan = 5;   // 将球行单位进切分的角度
     private static final float UNIT_SIZE = 1.0f;    // 单位尺寸
-    private float radius = 0.5f;    // 球的半径
+    private float radius = 0.8f;    // 球的半径
     private int vCount = 0;     // 记录顶点个数，先初始化为0
     private static final int BYTES_PER_FLOAT = 4;   // float类型的字节数
     private static final int COORDS_PER_VERTEX = 3; // 数组中每个顶点的坐标数
@@ -55,6 +55,7 @@ public class Ball {
     private static final String U_TEXTURE_UNIT = "u_TextureUnit";
     private int uTextureUnitLocation;
     private int aTextureCoordinates;
+
 
     public Ball(Context context){
         this.context = context;
@@ -87,69 +88,69 @@ public class Ball {
             for (int hAngle = 0; hAngle <= 360; hAngle = hAngle + angleSpan)//球面水平方向360/angleSpan数量单位
             {
                 // 纵向横向各到一个角度后计算对应的此点在球面上的坐标
-                float x0 = (float) (radius * UNIT_SIZE
+                float z0 = (float) (radius * UNIT_SIZE
                         * Math.sin(Math.toRadians(vAngle)) * Math.cos(Math
                         .toRadians(hAngle)));
-                float y0 = (float) (radius * UNIT_SIZE
+                float x0 = (float) (radius * UNIT_SIZE
                         * Math.sin(Math.toRadians(vAngle)) * Math.sin(Math
                         .toRadians(hAngle)));
-                float z0 = (float) (radius * UNIT_SIZE * Math.cos(Math
+                float y0 = (float) (radius * UNIT_SIZE * Math.cos(Math
                         .toRadians(vAngle)));
                 Log.w("x0 y0 z0","" + x0 + "  "+y0+ "  " +z0);
-                float x1 = (float) (radius * UNIT_SIZE
+                float z1 = (float) (radius * UNIT_SIZE
                         * Math.sin(Math.toRadians(vAngle)) * Math.cos(Math
                         .toRadians(hAngle + angleSpan)));
-                float y1 = (float) (radius * UNIT_SIZE
+                float x1 = (float) (radius * UNIT_SIZE
                         * Math.sin(Math.toRadians(vAngle)) * Math.sin(Math
                         .toRadians(hAngle + angleSpan)));
-                float z1 = (float) (radius * UNIT_SIZE * Math.cos(Math
+                float y1 = (float) (radius * UNIT_SIZE * Math.cos(Math
                         .toRadians(vAngle)));
                 Log.w("x1 y1 z1","" + x1 + "  "+y1+ "  " +z1);
-                float x2 = (float) (radius * UNIT_SIZE
+                float z2 = (float) (radius * UNIT_SIZE
                         * Math.sin(Math.toRadians(vAngle + angleSpan)) * Math
                         .cos(Math.toRadians(hAngle + angleSpan)));
-                float y2 = (float) (radius * UNIT_SIZE
+                float x2 = (float) (radius * UNIT_SIZE
                         * Math.sin(Math.toRadians(vAngle + angleSpan)) * Math
                         .sin(Math.toRadians(hAngle + angleSpan)));
-                float z2 = (float) (radius * UNIT_SIZE * Math.cos(Math
+                float y2 = (float) (radius * UNIT_SIZE * Math.cos(Math
                         .toRadians(vAngle + angleSpan)));
                 Log.w("x2 y2 z2","" + x2 + "  "+y2+ "  " +z2);
-                float x3 = (float) (radius * UNIT_SIZE
+                float z3 = (float) (radius * UNIT_SIZE
                         * Math.sin(Math.toRadians(vAngle + angleSpan)) * Math
                         .cos(Math.toRadians(hAngle)));
-                float y3 = (float) (radius * UNIT_SIZE
+                float x3 = (float) (radius * UNIT_SIZE
                         * Math.sin(Math.toRadians(vAngle + angleSpan)) * Math
                         .sin(Math.toRadians(hAngle)));
-                float z3 = (float) (radius * UNIT_SIZE * Math.cos(Math
+                float y3 = (float) (radius * UNIT_SIZE * Math.cos(Math
                         .toRadians(vAngle + angleSpan)));
                 Log.w("x3 y3 z3","" + x3 + "  "+y3+ "  " +z3);
                 // 一个矩形由两个三角形组成
                 // 第一个三角形的三个点
-                alVertix.add(x0);
-                alVertix.add(y0);
-                alVertix.add(z0);
                 alVertix.add(x1);
                 alVertix.add(y1);
                 alVertix.add(z1);
-                alVertix.add(x2);
-                alVertix.add(y2);
-                alVertix.add(z2);
-                // 上面三个点对应的纹理坐标
-                float s0 = hAngle / 360.0f;
-                float s1 = (hAngle + angleSpan)/360.0f ;
-                float t0 = 1 - vAngle / 180.0f;
-                float t1 = 1 - (vAngle + angleSpan) / 180.0f;
-
-                textureVertix.add(s0);// x0 y0对应纹理坐标
-                textureVertix.add(t0);
-                textureVertix.add(s1);// x1 y1对应纹理坐标
-                textureVertix.add(t0);
-                textureVertix.add(s1);// x2 y2对应纹理坐标
-                textureVertix.add(t1);
-                // 第二个三角形的三个点
+                alVertix.add(x3);
+                alVertix.add(y3);
+                alVertix.add(z3);
                 alVertix.add(x0);
                 alVertix.add(y0);
                 alVertix.add(z0);
+                // 关于纹理坐标 Android Opengl的坐标 http://www.cnblogs.com/jenry/p/4083415.html
+                float s0 = hAngle / 360.0f;
+                float t0 = 1 - vAngle / 180.0f;
+                float s1 = (hAngle + angleSpan)/360.0f ;
+                float t1 = 1 - (vAngle + angleSpan) / 180.0f;
+
+                textureVertix.add(s1);
+                textureVertix.add(t0);
+                textureVertix.add(s0);
+                textureVertix.add(t1);
+                textureVertix.add(s0);
+                textureVertix.add(t0);
+                // 第二个三角形的三个点
+                alVertix.add(x1);
+                alVertix.add(y1);
+                alVertix.add(z1);
                 alVertix.add(x2);
                 alVertix.add(y2);
                 alVertix.add(z2);
@@ -157,11 +158,11 @@ public class Ball {
                 alVertix.add(y3);
                 alVertix.add(z3);
                 // 第二个三角形对应的纹理坐标
-                textureVertix.add(s0);// x0 y0对应纹理坐标
+                textureVertix.add(s1);
                 textureVertix.add(t0);
-                textureVertix.add(s1);// x2 y2对应纹理坐标
+                textureVertix.add(s1);
                 textureVertix.add(t1);
-                textureVertix.add(s0);// x3 y3对应纹理坐标
+                textureVertix.add(s0);
                 textureVertix.add(t1);
             }
         }
@@ -208,7 +209,7 @@ public class Ball {
     }
 
     private void initTexture() {
-        textureId = TextureHelper.loadTexture(context, R.mipmap.world);
+        textureId = TextureHelper.loadTexture(context, R.mipmap.test);
         // Set the active texture unit to texture unit 0.
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         // Bind the texture to this unit.

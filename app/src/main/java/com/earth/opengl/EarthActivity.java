@@ -14,6 +14,7 @@ import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.earth.opengl.utils.LoggerConfig;
+import com.pixel.opengl.util.Geometry;
 
 /**
  * Created by nicky on 2017/4/17.
@@ -77,8 +78,6 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
     float oldDist;
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-        final float x = event.getX();
-        final float y = event.getY();
 
         switch (event.getAction() & MotionEvent.ACTION_MASK){
             case MotionEvent.ACTION_DOWN:
@@ -88,11 +87,11 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                 mode = 0;
                 break;
             case MotionEvent.ACTION_POINTER_UP:
-                mode -= 1;
+                mode = 0;
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
                 oldDist = spacing(event);
-                mode += 1;
+                mode = 2;
                 break;
         }
         if(LoggerConfig.ON){
@@ -100,6 +99,8 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
         }
         if(event.getAction() == MotionEvent.ACTION_DOWN){
             if (mode == 1) {
+                final float x = event.getX();
+                final float y = event.getY();
                 glSurfaceView.queueEvent(new Runnable() {
                     @Override
                     public void run() {
@@ -108,30 +109,34 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                 });
             }
         }
+        else if(event.getAction() == MotionEvent.ACTION_UP){
+            final float x = event.getX();
+            final float y = event.getY();
+            glSurfaceView.queueEvent(new Runnable() {
+                    @Override
+                    public void run() {
+                        earthRenderer.handleTouchUp(x, y);
+                    }
+                });
+        }
         else if(event.getAction() ==MotionEvent.ACTION_MOVE) {
-            if (mode >= 2) {
+            if (mode == 2) {
+                //双指操作
                 float newDist = spacing(event);
-                if (newDist > oldDist + 10) {
+                if ( (newDist > oldDist + 10) || (newDist < oldDist - 10) ) {
                     final float distance = newDist - oldDist;
                     glSurfaceView.queueEvent(new Runnable() {
                         @Override
                         public void run() {
-                            earthRenderer.handleMultiTouch(distance,true);
+                            earthRenderer.handleMultiTouch(distance);
                         }
                     });
                     oldDist = newDist;
                 }
-                if (newDist < oldDist - 10) {
-                    final float distance = oldDist - newDist;
-                    glSurfaceView.queueEvent(new Runnable() {
-                        @Override
-                        public void run() {
-                            earthRenderer.handleMultiTouch(distance,false);
-                        }
-                    });
-                    oldDist = newDist;
-                }
-            }else{
+            }
+            if(mode == 1){//单指操作
+                final float x = event.getX();
+                final float y = event.getY();
                 glSurfaceView.queueEvent(new Runnable() {
                     @Override
                     public void run() {
@@ -140,10 +145,14 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                 });
             }
         }
-
         return true;
     }
 
+    private float spacing(Geometry.Point oldPoint,Geometry.Point newPoint){
+        float x = oldPoint.x - newPoint.x;
+        float y = oldPoint.y - newPoint.y;
+        return (float) Math.sqrt(x*x + y*y);
+    }
     private float spacing(MotionEvent event) {
         float x = event.getX(0) - event.getX(1);
         float y = event.getY(0) - event.getY(1);

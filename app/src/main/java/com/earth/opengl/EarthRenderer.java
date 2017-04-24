@@ -3,6 +3,7 @@ package com.earth.opengl;
 import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.opengl.Matrix;
 import android.util.Log;
 
 import com.earth.opengl.shape.Ball;
@@ -43,36 +44,50 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
         GLES20.glViewport(0,0,width,height);
         float ratio = (float) width / (float) height;
         // 调用此方法计算产生透视投影矩阵
-        MatrixHelper.setProjectFrustum(-ratio,ratio, -1, 1, 1f, 100f);
+        //MatrixHelper.setProjectFrustum(-ratio,ratio, -1, 1, 0.1f, 400f);
+        MatrixHelper.perspectiveM(MatrixHelper.mProjectionMatrix,
+                (float) Ball.overture,
+                (float)width/(float)height, 0.1f, 400f);
         // 调用此方法产生摄像机9参数位置矩阵
-        MatrixHelper.setCamera(0, 0, 0f, //摄像机位置
-                            0f, 0f, 0f, //摄像机目标视点
+        MatrixHelper.setCamera(0, 0, 3f, //摄像机位置
+                            0f, 0f, -1.0f, //摄像机目标视点
                             0f, 1.0f, 0.0f);//摄像机头顶方向向量
-
-//        MatrixHelper.setCamera(0, 0, 0.1f, //摄像机位置
-//                            0f, 0f, -1.0f, //摄像机目标视点
-//                            0f, 1.0f, 0.0f);//摄像机头顶方向向量
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
         //清除深度缓冲与颜色缓冲
         GLES20.glClear( GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
-        MatrixHelper.setCamera(ball.camera.x, ball.camera.y, ball.camera.z, //摄像机位置
-                0f, 0f, 0f, //摄像机目标视点
-                ball.cameraUp.x, ball.cameraUp.y, ball.cameraUp.z);//摄像机头顶方向向量
+        //updateBallMatrix();
         ball.draw();
     }
 
+    private void updateBallMatrix() {
+        Matrix.setIdentityM(MatrixHelper.mModelMatrix, 0);
+        Matrix.scaleM(MatrixHelper.mModelMatrix, 0, 1.0f, 1.0f, 1.0f);
+        float[] matrixRotationX = MatrixHelper.rotateX(ball.mfingerRotationX);
+        Matrix.multiplyMM(MatrixHelper.mModelMatrix,0, MatrixHelper.mModelMatrix,0, matrixRotationX,0);
+
+        float[] matrixRotationY = MatrixHelper.rotateY(ball.mfingerRotationY);
+        Matrix.multiplyMM(MatrixHelper.mModelMatrix,0, MatrixHelper.mModelMatrix,0, matrixRotationY,0);
+
+        Matrix.setLookAtM(MatrixHelper.mViewMatrix,0,  0, 3f, 0, 0f, 0f, -1.0f, 0f, 1.0f, 0.0f);
+        Matrix.translateM(MatrixHelper.mViewMatrix,0, 0f,0f,ball.scale);
+    }
+
+    public void handleTouchUp(float x, float y) {
+        if(ball!=null){
+            ball.mLastX = 0;
+            ball.mLastY = 0;
+            Log.w(TAG,"handleTouchUp ball.mLastPostion clear");
+        }
+    }
 
     public void handleTouchDown(float x, float y) {
         if(ball!=null){
             ball.mLastX = x;
             ball.mLastY = y;
-            if(LoggerConfig.ON){
-                Log.w(TAG, "ball.mLastX : "+x);
-                Log.w(TAG, "ball.mLastY : "+y);
-            }
+            Log.w(TAG,"handleTouchUp ball.mLastPostion x:"+x+"     y:"+y);
         }
     }
 
@@ -80,40 +95,30 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
         if(ball != null){
 //            float offsetX = ball.mLastX - x;
 //            float offsetY = ball.mLastY - y;
-//            MatrixHelper.rotate(offsetX/ball.step, 0, 1, 0);
-//            MatrixHelper.rotate(offsetY/ball.step, 1, 0, 0);
-//---------------------移动摄像机----------------------------------------------------
-            float offsetY = (ball.mLastY - y);
-            float offsetVerticalAngle = (float) Math.toRadians(offsetY);
-            float offsetX = (ball.mLastX - x);
-            float offsetHorizontalAngle = (float) Math.toRadians(offsetX);
-            ball.mVerticalAngle += offsetVerticalAngle;
-            ball.mHorizontalAngle += offsetHorizontalAngle;
-            if(LoggerConfig.ON){
-                Log.w(TAG, "ball.mVerticalAngle : "+ball.mVerticalAngle);
-                Log.w(TAG, "ball.mHorizontalAngle : "+ball.mHorizontalAngle);
-            }
+//            MatrixHelper.rotate(offsetX, 0, 1, 0);
+//            MatrixHelper.rotate(offsetY, 1, 0, 0);
+//---------------------------------------------------------------------------------
+            float offsetX = ball.mLastX - x;
+            float offsetY = ball.mLastY - y;
+            offsetY *= 0.005;
+            offsetX *= 0.005;
+            ball.mfingerRotationX += offsetY * Ball.overture/100;
+            if(ball.mfingerRotationX*2 > Math.PI/2 ) ball.mfingerRotationX = (float) (Math.PI/2/2);
+            if(ball.mfingerRotationX*2 < -Math.PI/2) ball.mfingerRotationX = (float) (-Math.PI/2/2);
+            ball.mfingerRotationY += offsetX * Ball.overture/100;
+            Log.w(TAG,"ball.mfingerRotationX : "+ball.mfingerRotationX);
+            Log.w(TAG,"ball.mfingerRotationY : "+ball.mfingerRotationY);
 
-            double v = ball.mVerticalAngle % (2 * Math.PI);
-            v = Math.abs(v);
-            if(v < Math.PI/2){
-                ball.cameraUp.y = 1;
-            }else if(v < 3*Math.PI/2){
-                ball.cameraUp.y = -1;
-            }else if(v < 2*Math.PI){
-                ball.cameraUp.y = 1;
-            }
+            Matrix.setIdentityM(MatrixHelper.mModelMatrix, 0);
+            float[] tempx = new float[16];
+            float[] tempy = new float[16];
+            Matrix.setIdentityM(tempx, 0);
+            Matrix.setIdentityM(tempy, 0);
+            Matrix.rotateM(tempx, 0, ball.mfingerRotationY*100, 0, 1, 0);
 
-            double y0 = Math.sin(ball.mVerticalAngle) * ball.cameraWatchRadius;
-            double z0 = Math.cos(ball.mVerticalAngle) * ball.cameraWatchRadius;
-            ball.camera.y = (float) y0;
-            ball.camera.z = (float) z0;
-
-//            double x0 = Math.cos(ball.mHorizontalAngle) * ball.cameraWatchRadius ;
-//            double z0 = Math.sin(ball.mHorizontalAngle) * ball.cameraWatchRadius ;
-//            ball.camera.x = (float) x0;
-//            ball.camera.z = (float) z0;
-
+            Matrix.rotateM(tempy, 0, ball.mfingerRotationX*100, 1, 0, 0);
+            Matrix.multiplyMM(MatrixHelper.mModelMatrix,0, tempy,0, tempx,0 );
+//---------------------------------------------------------------------------------
             ball.mLastX = x;
             ball.mLastY = y;
         }
@@ -129,5 +134,31 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
         }else{
             MatrixHelper.scale(scale, scale, scale);
         }
+    }
+
+    public void handleMultiTouch(float distance){
+        float dis = distance / 10;
+        float scale;
+        if(dis < 0 ){
+            //小于0 两点距离比前一刻的两点距离短 在缩小
+            scale = -0.1f;
+            ball.scale -= 0.1;
+        }else{
+            scale = 0.1f;
+            ball.scale += 0.1;
+        }
+        if(ball.scale > Ball.SCALE_MAX_VALUE){
+            scale = 0.0f;
+            ball.scale = Ball.SCALE_MAX_VALUE;
+        }
+        if(ball.scale < Ball.SCALE_MIN_VALUE){
+            scale = 0.0f;
+            ball.scale = Ball.SCALE_MIN_VALUE;
+        }
+        if(LoggerConfig.ON){
+            Log.w(TAG, "MultiTouch ball.distance: "+ball.scale);
+        }
+        Matrix.translateM(MatrixHelper.mViewMatrix,0, 0f,0f,scale);
+        ball.currentScale = scale;
     }
 }

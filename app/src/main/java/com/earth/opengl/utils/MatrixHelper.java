@@ -8,9 +8,9 @@ import android.opengl.Matrix;
 
 public class MatrixHelper {
 
-    private static float[] mProjectionMatrix = new float[16];// 4x4矩阵 存储投影矩阵
-    private static float[] mViewMatrix = new float[16];// 摄像机位置朝向9参数矩阵
-    private static float[] mModelMatrix = new float[16];// 模型变换矩阵
+    public static float[] mProjectionMatrix = new float[16];// 4x4矩阵 存储投影矩阵
+    public static float[] mViewMatrix = new float[16];// 摄像机位置朝向9参数矩阵
+    public static float[] mModelMatrix = new float[16];// 模型变换矩阵
 
     static{
         //初始化为单位矩阵
@@ -60,7 +60,6 @@ public class MatrixHelper {
                                          float far // far面距离
     ) {
         Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
-        //perspectiveM(mProjectionMatrix, 45, right, 0.1f, 100f);
     }
 
     // 获取具体物体的总变换矩阵
@@ -90,4 +89,34 @@ public class MatrixHelper {
         m[3] = 0f;          m[7] = 0f;  m[11] = -1f;            m[15] = 0f;
     }
 
+
+    public static float[] rotateX(float mfingerRotationX) {
+        float cos = (float) Math.cos(mfingerRotationX);
+        float sin = (float) Math.sin(mfingerRotationX);
+        float[] m = new float[16];
+//                1.0f, 0.0f, 0.0f, 0.0f,
+//                0.0f, cos, sin, 0.0f,
+//                0.0f, -sin, cos, 0.0f,
+//                0.0f, 0.0f, 0.0f, 1.0f
+        m[0] = 1.0f;    m[4] = 0f;      m[8] = 0f;     m[12] = 0f;
+        m[1] = 0f;      m[5] = cos;     m[9] = sin;    m[13] = 0f;
+        m[2] = 0f;      m[6] = -sin;    m[10] = cos;   m[14] = 0.0f;
+        m[3] = 0f;      m[7] = 0f;      m[11] = 0f;    m[15] = 1.0f;
+        return m;
+    }
+
+    public static float[] rotateY(float mfingerRotationY) {
+        float cos = (float) Math.cos(mfingerRotationY);
+        float sin = (float) Math.sin(mfingerRotationY);
+        float[] m = new float[16];
+//                cos, 0.0f, -sin, 0.0f,
+//                0.0f, 1.0f, 0.0f, 0.0f,
+//                sin, 0.0f, cos, 0.0f,
+//                0.0f, 0.0f, 0.0f, 1.0f
+        m[0] = cos;    m[4] = 0f;      m[8] = -sin;     m[12] = 0f;
+        m[1] = 0f;     m[5] = 1.0f;    m[9] = 0f;       m[13] = 0f;
+        m[2] = sin;    m[6] = 0f;      m[10] = cos;     m[14] = 0.0f;
+        m[3] = 0f;     m[7] = 0f;      m[11] = 0f;      m[15] = 1.0f;
+        return m;
+    }
 }
