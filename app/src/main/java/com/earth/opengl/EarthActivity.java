@@ -8,6 +8,7 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -26,6 +27,10 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
     private boolean rendererSet = false;
 
     final EarthRenderer earthRenderer = new EarthRenderer(this);
+
+    // 速度相关 http://leonard-peng.github.io/2016/02/21/android-basic-gesture-detec/
+    // 速度相关 http://blog.csdn.net/bingxianwu/article/details/7446799
+    private VelocityTracker mVelocityTracker = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +60,11 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
         if(rendererSet){
             glSurfaceView.onPause();
         }
+        if(null != mVelocityTracker) {
+            mVelocityTracker.clear();
+            mVelocityTracker.recycle();
+            mVelocityTracker = null;
+        }
     }
 
     @Override
@@ -62,6 +72,11 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
         super.onResume();
         if (rendererSet){
             glSurfaceView.onResume();
+        }
+        if (mVelocityTracker == null) {
+            mVelocityTracker = VelocityTracker.obtain();
+        } else {
+            mVelocityTracker.clear();
         }
     }
 
@@ -97,6 +112,7 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
         if(LoggerConfig.ON){
             Log.w(TAG, "mode : "+mode);
         }
+        // ------------------------------------------------------------
         if(event.getAction() == MotionEvent.ACTION_DOWN){
             if (mode == 1) {
                 final float x = event.getX();
@@ -107,17 +123,27 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                         earthRenderer.handleTouchDown(x, y);
                     }
                 });
+                //20170425 增加速度
+                if (mVelocityTracker == null) {
+                    mVelocityTracker = VelocityTracker.obtain();
+                } else {
+                    mVelocityTracker.clear();
+                }
+                mVelocityTracker.addMovement(event);
             }
         }
         else if(event.getAction() == MotionEvent.ACTION_UP){
             final float x = event.getX();
             final float y = event.getY();
+            final float xVelocity = mVelocityTracker.getXVelocity();
+            final float yVelocity = mVelocityTracker.getYVelocity();
             glSurfaceView.queueEvent(new Runnable() {
                     @Override
                     public void run() {
-                        earthRenderer.handleTouchUp(x, y);
+                        earthRenderer.handleTouchUp(x, y, xVelocity, yVelocity);
                     }
                 });
+
         }
         else if(event.getAction() ==MotionEvent.ACTION_MOVE) {
             if (mode == 2) {
@@ -135,6 +161,9 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                 }
             }
             if(mode == 1){//单指操作
+                mVelocityTracker.addMovement(event);
+                mVelocityTracker.computeCurrentVelocity(1000);
+                // 在获取速度之前总要进行以上两步
                 final float x = event.getX();
                 final float y = event.getY();
                 glSurfaceView.queueEvent(new Runnable() {
@@ -145,8 +174,12 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                 });
             }
         }
-        return true;
+        return true;//返回 true 表示该动作已被处理
     }
+
+
+
+
 
     private float spacing(Geometry.Point oldPoint,Geometry.Point newPoint){
         float x = oldPoint.x - newPoint.x;
@@ -158,4 +191,5 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
         float y = event.getY(0) - event.getY(1);
         return (float) Math.sqrt(x * x + y * y);
     }
+
 }

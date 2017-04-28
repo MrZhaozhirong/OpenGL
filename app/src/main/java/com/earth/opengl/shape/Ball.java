@@ -2,7 +2,6 @@ package com.earth.opengl.shape;
 
 import android.content.Context;
 import android.opengl.GLES20;
-import android.util.Log;
 
 import com.earth.opengl.utils.MatrixHelper;
 import com.earth.opengl.utils.ShaderHelper;
@@ -22,16 +21,26 @@ import java.util.ArrayList;
  */
 
 public class Ball {
+
+    //*****************************************************************
+    //单手拖拽相关
     public float mLastX;
     public float mLastY;
     public float mfingerRotationX = 0;
     public float mfingerRotationY = 0;
+    public float[] mMatrixFingerRotationX = new float[16];
+    public float[] mMatrixFingerRotationY = new float[16];
     public final static float SCALE_MAX_VALUE=1.0f;
     public final static float SCALE_MIN_VALUE=-1.0f;
     public final static double overture = 45;
-    public float scale = 0.0f;
-    public float currentScale = 0.0f;
-    //************************************************************
+    public float zoomTimes = 0.0f;
+    //*惯性自滚标志
+    public boolean gestureInertia_isStop = true;
+    //*纵角度限制阻尼
+    public float AxisSlidingValue = 0f;
+    public float step = 1f;
+    public RollBoundaryDirection boundaryDirection = RollBoundaryDirection.NORMAL;
+    //*****************************************************************
     private final Context context;
     final int angleSpan = 5;   // 将球行单位进切分的角度
     private static final float UNIT_SIZE = 1.0f;    // 单位尺寸
@@ -40,16 +49,13 @@ public class Ball {
     private static final int BYTES_PER_FLOAT = 4;   // float类型的字节数
     private static final int COORDS_PER_VERTEX = 3; // 数组中每个顶点的坐标数
     private static final int TEXTURE_COORDIANTES_COMPONENT_COUNT = 2; // 每个纹理坐标为 S T两个
-
     private FloatBuffer vertexBuffer;// 顶点坐标
     private FloatBuffer textureBuffer;// 纹理坐标
-
     private int program;
     private static final String A_POSITION = "a_Position";
     private static final String U_MATRIX = "u_Matrix";
     private int uMatrixLocation;
     private int aPositionLocation;
-
     private int textureId;
     private static final String A_TEXTURE_COORDINATES = "a_TextureCoordinates";
     private static final String U_TEXTURE_UNIT = "u_TextureUnit";
@@ -96,7 +102,7 @@ public class Ball {
                         .toRadians(hAngle)));
                 float y0 = (float) (radius * UNIT_SIZE * Math.cos(Math
                         .toRadians(vAngle)));
-                Log.w("x0 y0 z0","" + x0 + "  "+y0+ "  " +z0);
+                //Log.w("x0 y0 z0","" + x0 + "  "+y0+ "  " +z0);
                 float z1 = (float) (radius * UNIT_SIZE
                         * Math.sin(Math.toRadians(vAngle)) * Math.cos(Math
                         .toRadians(hAngle + angleSpan)));
@@ -105,7 +111,7 @@ public class Ball {
                         .toRadians(hAngle + angleSpan)));
                 float y1 = (float) (radius * UNIT_SIZE * Math.cos(Math
                         .toRadians(vAngle)));
-                Log.w("x1 y1 z1","" + x1 + "  "+y1+ "  " +z1);
+                //Log.w("x1 y1 z1","" + x1 + "  "+y1+ "  " +z1);
                 float z2 = (float) (radius * UNIT_SIZE
                         * Math.sin(Math.toRadians(vAngle + angleSpan)) * Math
                         .cos(Math.toRadians(hAngle + angleSpan)));
@@ -114,7 +120,7 @@ public class Ball {
                         .sin(Math.toRadians(hAngle + angleSpan)));
                 float y2 = (float) (radius * UNIT_SIZE * Math.cos(Math
                         .toRadians(vAngle + angleSpan)));
-                Log.w("x2 y2 z2","" + x2 + "  "+y2+ "  " +z2);
+                //Log.w("x2 y2 z2","" + x2 + "  "+y2+ "  " +z2);
                 float z3 = (float) (radius * UNIT_SIZE
                         * Math.sin(Math.toRadians(vAngle + angleSpan)) * Math
                         .cos(Math.toRadians(hAngle)));
@@ -123,7 +129,7 @@ public class Ball {
                         .sin(Math.toRadians(hAngle)));
                 float y3 = (float) (radius * UNIT_SIZE * Math.cos(Math
                         .toRadians(vAngle + angleSpan)));
-                Log.w("x3 y3 z3","" + x3 + "  "+y3+ "  " +z3);
+                //Log.w("x3 y3 z3","" + x3 + "  "+y3+ "  " +z3);
                 // 一个矩形由两个三角形组成
                 // 第一个三角形的三个点
                 alVertix.add(x1);
