@@ -142,6 +142,7 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
                 Log.d(TAG,"ball.AxisSlidingValue : "+ball.AxisSlidingValue);
                 ball.boundaryDirection = RollBoundaryDirection.TOP;
             }
+            Log.w(TAG,"ball.boundaryDirection : "+ ball.boundaryDirection.name());
             //！！！模型矩阵的操作，全都归并到 updateBallMatrix
 //            Matrix.setIdentityM(MatrixHelper.mModelMatrix, 0);
 //            Matrix.setIdentityM(ball.mMatrixfingerRotationX, 0);
@@ -177,11 +178,20 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
                 if(false) {
                     Log.d(TAG, "X velocity : " + xVelocity);
                     Log.d(TAG, "Y velocity : " + yVelocity);
-                    Log.i(TAG,"Inertia ball.mfingerRotationX : "+ball.mfingerRotationX);
-                    Log.i(TAG,"Inertia ball.mfingerRotationY : "+ball.mfingerRotationY);
-                    Log.i(TAG,"//------------------------------------------");
                 }
-                if(isInertiaY) {
+                if(ball.boundaryDirection == RollBoundaryDirection.BOTTOM){
+                    ball.mfingerRotationX -= (float) (Math.PI/2/2) / 50f;
+                    if(ball.mfingerRotationX <= Math.PI/2/2){
+                        ball.boundaryDirection = RollBoundaryDirection.NORMAL;
+                    }
+                }
+                else if(ball.boundaryDirection == RollBoundaryDirection.TOP){
+                    ball.mfingerRotationX += (float) (Math.PI/2/2) / 50f;
+                    if(ball.mfingerRotationX >= -Math.PI/2/2){
+                        ball.boundaryDirection = RollBoundaryDirection.NORMAL;
+                    }
+                }
+                else if(isInertiaY) {
                     float offsetY = -mYVelocity  / 400;
                     offsetY *= 0.005;
                     ball.mfingerRotationX += offsetY * Ball.overture / 100;
@@ -193,12 +203,16 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
                     }
                     //Matrix.rotateM(tempy, 0, ball.mfingerRotationX * 100, 1, 0, 0);
                 }
+
                 if(isInertiaX){
                     float offsetX = -mXVelocity / 200;
                     offsetX *= 0.005;
                     ball.mfingerRotationY += offsetX * Ball.overture/100;
                     //Matrix.rotateM(tempx, 0, ball.mfingerRotationY*100, 0, 1, 0);
                 }
+                Log.i(TAG,"Inertia ball.mfingerRotationX : "+ball.mfingerRotationX);
+                Log.i(TAG,"Inertia ball.mfingerRotationY : "+ball.mfingerRotationY);
+                Log.i(TAG,"//------------------------------------------");
                 //！！！模型矩阵的操作，全都归并到 updateBallMatrix
                 //Matrix.multiplyMM(MatrixHelper.mModelMatrix,0, tempy,0, tempx,0 );
 //---------------------------------------------------------------------------------
