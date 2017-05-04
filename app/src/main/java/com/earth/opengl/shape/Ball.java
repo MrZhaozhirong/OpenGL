@@ -23,7 +23,7 @@ import java.util.ArrayList;
 public class Ball {
 
     //*****************************************************************
-    //单手拖拽相关
+    //** 单手双手操作相关
     public float mLastX;
     public float mLastY;
     public float mfingerRotationX = 0;
@@ -34,15 +34,14 @@ public class Ball {
     public final static float SCALE_MIN_VALUE=-1.0f;
     public final static double overture = 45;
     public float zoomTimes = 0.0f;
-    //*惯性自滚标志
+    //** 惯性自滚标志
     public boolean gestureInertia_isStop = true;
-    //*纵角度限制阻尼
-    public float AxisSlidingValue = 0f;
-    public float step = 1f;
+    //** 纵角度限制相关
     public RollBoundaryDirection boundaryDirection = RollBoundaryDirection.NORMAL;
+    public double moving_count_auto_return = 0.0f;
     //*****************************************************************
     private final Context context;
-    final int angleSpan = 5;   // 将球行单位进切分的角度
+    final int angleSpan = 4;   // 将球行单位进切分的角度
     private static final float UNIT_SIZE = 1.0f;    // 单位尺寸
     private float radius = 0.8f;    // 球的半径
     private int vCount = 0;     // 记录顶点个数，先初始化为0

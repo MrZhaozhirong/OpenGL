@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.pm.ConfigurationInfo;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -14,7 +13,6 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.earth.opengl.utils.LoggerConfig;
 import com.pixel.opengl.util.Geometry;
 
 /**
@@ -108,9 +106,6 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                 oldDist = spacing(event);
                 mode = 2;
                 break;
-        }
-        if(LoggerConfig.ON){
-            Log.w(TAG, "mode : "+mode);
         }
         // ------------------------------------------------------------
         if(event.getAction() == MotionEvent.ACTION_DOWN){
