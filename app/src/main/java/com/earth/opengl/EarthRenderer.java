@@ -155,22 +155,24 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
             //ball.mfingerRotationY += offsetX * Ball.overture/100;
             //ball.mfingerRotationX += offsetY * Ball.overture/100;
             // 增加 角度限制的惯性特效
-            ball.mfingerRotationY += offsetX/2 ;
-            Log.w(TAG,"ball.mfingerRotationY offset : "+ offsetX/2);
             if(ball.mfingerRotationX%360 > 90 ){
-                float temp = seriesDampDrag(ball.mfingerRotationX, offsetY);
+                float temp = seriesDampDrag(ball.mfingerRotationX, offsetY/2);
                 Log.w(TAG,"ball.mfingerRotationX offset : "+temp);
                 ball.mfingerRotationX += temp;
             }else
             if(ball.mfingerRotationX%360 < -90 ) {
-                float temp = seriesDampDrag(ball.mfingerRotationX, offsetY);
+                float temp = seriesDampDrag(ball.mfingerRotationX, offsetY/2);
                 Log.w(TAG,"ball.mfingerRotationX offset : "+temp);
                 ball.mfingerRotationX += temp;
             }else
             {
-                ball.mfingerRotationX += offsetY/2 ;
-                Log.w(TAG,"ball.mfingerRotationX offset : "+offsetY/2);
+                ball.mfingerRotationX += offsetY/5 ;
+                Log.w(TAG,"ball.mfingerRotationX offset : "+offsetY/5);
             }
+
+            ball.mfingerRotationY += offsetX/8 ;
+            Log.w(TAG,"ball.mfingerRotationY offset : "+ offsetX/8);
+
             updateBallBoundary();
             if(true){
                 Log.w(TAG,"ball.mfingerRotationY : "+ball.mfingerRotationY);
@@ -226,25 +228,25 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
                 }
 
                 if(isInertiaX){
-                    float offsetX = -mXVelocity / 1000;
+                    float offsetX = -mXVelocity / 2000;
                     ball.mfingerRotationY = ball.mfingerRotationY + offsetX;
                 }
 
                 updateBallBoundary();
                 if(false) {
-                    Log.d(TAG, "X velocity : " + xVelocity);
-                    Log.d(TAG, "Y velocity : " + yVelocity);
                     Log.i(TAG,"Inertia ball.mfingerRotationX : "+ball.mfingerRotationX);
                     Log.i(TAG,"Inertia ball.mfingerRotationY : "+ball.mfingerRotationY);
                     Log.i(TAG,"//------------------------------------------");
                 }
 //---------------------------------------------------------------------------------
-                if(Math.abs(mYVelocity - 0.95f*mYVelocity) < 0.00001f
-                        || Math.abs(mXVelocity - 0.95f*mXVelocity) < 0.00001f){
-                    ball.gestureInertia_isStop = true;
+                if(Math.abs(mYVelocity - 0.97f*mYVelocity) < 0.00001f
+                        || Math.abs(mXVelocity - 0.97f*mXVelocity) < 0.00001f){
+                    if(ball.boundaryDirection == RollBoundaryDirection.NORMAL){
+                        ball.gestureInertia_isStop = true;
+                    }
                 }
-                mYVelocity = 0.98f*mYVelocity;
-                mXVelocity = 0.98f*mXVelocity;
+                mYVelocity = 0.975f*mYVelocity;
+                mXVelocity = 0.975f*mXVelocity;
                 Thread.sleep(5);
             }
         }
@@ -258,11 +260,10 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
         //mFingerRotation > 0 = BOTTOM
         //mFingerRotation < 0 = TOP
         float absRotation = Math.abs(mFingerRotation);
-        float level = absRotation - 90;
         ball.moving_count_auto_return = absRotation - 90;
         ball.moving_count_auto_return = (float) (Math.sqrt(Math.pow(ball.moving_count_auto_return, 2.0)) / 15.0);
-        if(ball.moving_count_auto_return <= 0.000001){
-            ball.moving_count_auto_return = 0.000001;
+        if(ball.moving_count_auto_return <= 0.000015){
+            ball.moving_count_auto_return = 0.000015;
         }
         Log.d(TAG, "moving_count_auto_return : "+ball.moving_count_auto_return);
         return ball.moving_count_auto_return;
@@ -288,16 +289,16 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
             //反方向往回滚
             if(level < 10){
                 //   90°~100°
-                return offset * 0.4f;
+                return offset * 0.8f;
             }else if(level < 20){
                 //   100°~110°
-                return offset * 0.3f;
+                return offset * 0.6f;
             }else if(level < 30){
                 //   110°~120°
-                return offset * 0.2f;
+                return offset * 0.4f;
             }else{
                 //   >120°
-                return offset * 0.1f;
+                return offset * 0.2f;
             }
         }
         else //同方向一直拖着
@@ -313,7 +314,7 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
                 return offset * 0.1f;
             }else{
                 //   >120°
-                return offset * 0.05f;
+                return offset * 0.1f;
             }
         }
     }
