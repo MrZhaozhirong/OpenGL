@@ -55,7 +55,6 @@ public class Ball {
     private static final String U_MATRIX = "u_Matrix";
     private int uMatrixLocation;
     private int aPositionLocation;
-    private int textureId;
     private static final String A_TEXTURE_COORDINATES = "a_TextureCoordinates";
     private static final String U_TEXTURE_UNIT = "u_TextureUnit";
     private int uTextureUnitLocation;
@@ -145,6 +144,11 @@ public class Ball {
                 float t0 = 1 - vAngle / 180.0f;
                 float s1 = (hAngle + angleSpan)/360.0f ;
                 float t1 = 1 - (vAngle + angleSpan) / 180.0f;
+                // Android设备y坐标是反向的，正常图显示到设备上是水平颠倒的。
+                // 解决方案就是loadTexture纹理设置纹理包装时，纹理T坐标（y）设置镜面重复
+                // ball读取纹理的时候  t范围坐标取正常值+1
+                t0 = t0 + 1;
+                t1 = t1 + 1;
 
                 textureVertix.add(s1);
                 textureVertix.add(t0);
@@ -204,17 +208,19 @@ public class Ball {
     private void buildProgram() {
         //获取顶点着色器文本
         String vertexShaderSource = TextResourceReader
-                .readTextFileFromResource(context, R.raw.vertex_shader_ball);
+                .readTextFileFromResource(context, R.raw.ball_vertex_shader);
         //获取片段着色器文本
         String fragmentShaderSource = TextResourceReader
-                .readTextFileFromResource(context, R.raw.fragment_shader_ball);
+                .readTextFileFromResource(context, R.raw.ball_fragment_shader);
         //获取program的id
         program = ShaderHelper.buildProgram(vertexShaderSource, fragmentShaderSource);
         GLES20.glUseProgram(program);
     }
 
+    private int _TextureId;
+    private int resId = -1;
     private void initTexture() {
-        textureId = TextureHelper.loadTexture(context, R.mipmap.test);
+        int textureId = TextureHelper.loadTexture(context, R.mipmap.test_normal);
         // Set the active texture unit to texture unit 0.
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         // Bind the texture to this unit.
@@ -222,11 +228,32 @@ public class Ball {
         // Tell the texture uniform sampler to use this texture in the shader by
         // telling it to read from texture unit 0.
         GLES20.glUniform1i(uTextureUnitLocation, 0);
+
+        _TextureId = textureId;
+        resId = R.mipmap.test_normal;
+        lastUpdateTime = System.currentTimeMillis();
     }
 
+    public void updateTexture(int resourceId){
+        TextureHelper.updateTexture(context, resourceId, _TextureId);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _TextureId);
+        GLES20.glUniform1i(uTextureUnitLocation, 0);
+        resId = resourceId;
+    }
+
+    private long lastUpdateTime;
     public void draw(){
+        //模拟每秒更新帧图
+        if(System.currentTimeMillis() - lastUpdateTime > 1000L){
+            resId = (resId == R.mipmap.test_normal? R.mipmap.test_horizontal_flip : R.mipmap.test_normal);
+            updateTexture(resId);
+            lastUpdateTime = System.currentTimeMillis();
+        }
         //将最终变换矩阵写入
         GLES20.glUniformMatrix4fv(uMatrixLocation, 1, false, MatrixHelper.getFinalMatrix(),0);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, vCount);
     }
+
+
 }

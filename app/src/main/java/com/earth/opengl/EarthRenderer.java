@@ -32,8 +32,8 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         //设置屏幕背景色RGBA
         GLES20.glClearColor(0.0f,0.0f,0.0f, 1.0f);
-        //打开深度检测
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+//        GLES20.glEnable(GLES20.GL_BLEND);
         //打开背面剪裁
         GLES20.glCullFace(GLES20.GL_BACK);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
