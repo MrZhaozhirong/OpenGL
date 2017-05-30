@@ -7,6 +7,11 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.util.Log;
 
+import java.io.BufferedInputStream;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 
 /**
  * Created by ZZR on 2017/2/10.
@@ -71,8 +76,86 @@ public class TextureHelper {
         return textureObjectIds[0];
     }
 
+    public static int imageWidth = 3040;
+    public static int imageHeight = 1520;
+    public static int[] loadYUVTexture(Context context, int resourceId){
+        ByteBuffer dataBuffer = null;
+        try{
+            InputStream is = context.getResources().openRawResource(resourceId);
+            byte[] dataArray = new byte[is.available()];
+            is.read(dataArray);
+            //读出原始数据
+            dataBuffer = ByteBuffer.allocateDirect(dataArray.length * 1)
+                    .order(ByteOrder.nativeOrder());
+            dataBuffer.put(dataArray);
+            dataBuffer.position(0);
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
 
-
+        //加载SamplerY
+        final int[] _samplerYTexture = new int[1];
+        GLES20.glGenTextures(1, _samplerYTexture, 0);
+        if(_samplerYTexture[0] == 0){
+            Log.w(TAG,"_samplerYTexture Could not generate a new OpenGL texture object!");
+            return null;
+        }
+        int idxY = 0;
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _samplerYTexture[0]);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_MIRRORED_REPEAT);
+        dataBuffer.clear();
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0,
+                            GLES20.GL_LUMINANCE, imageWidth, imageHeight,
+                            0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE,
+                            dataBuffer);
+        //加载SamplerU
+        final int[] _samplerUTexture = new int[1];
+        GLES20.glGenTextures(1, _samplerUTexture, 0);
+        if(_samplerUTexture[0] == 0){
+            Log.w(TAG,"_samplerUTexture Could not generate a new OpenGL texture object!");
+            return null;
+        }
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _samplerUTexture[0]);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_MIRRORED_REPEAT);
+        dataBuffer.clear();
+        int idxU = imageWidth * imageHeight;
+        dataBuffer.position(idxU);
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0,
+                            GLES20.GL_LUMINANCE, imageWidth/2, imageHeight/2,
+                            0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE,
+                            dataBuffer);
+        //加载SamplerV
+        final int[] _samplerVTexture = new int[1];
+        GLES20.glGenTextures(1, _samplerVTexture, 0);
+        if(_samplerVTexture[0] == 0){
+            Log.w(TAG,"_samplerVTexture Could not generate a new OpenGL texture object!");
+            return null;
+        }
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _samplerVTexture[0]);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_MIRRORED_REPEAT);
+        dataBuffer.clear();
+        int idxV = idxU + (idxU / 4);
+        dataBuffer.position(idxV);
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0,
+                            GLES20.GL_LUMINANCE, imageWidth/2, imageHeight/2,
+                            0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE,
+                            dataBuffer);
+        //返回纹理ID
+        int[] result = new int[3];
+        result[0] = _samplerYTexture[0];
+        result[1] = _samplerUTexture[0];
+        result[2] = _samplerVTexture[0];
+        return result;
+    }
     /**
      * 从原生文件加载纹理图片
      * @param context
