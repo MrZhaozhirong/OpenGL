@@ -69,7 +69,7 @@ public class Ball {
         aPositionLocation = GLES20.glGetAttribLocation(program, A_POSITION);
         uMatrixLocation = GLES20.glGetUniformLocation(program, U_MATRIX);
         aTextureCoordinates = GLES20.glGetAttribLocation(program, A_TEXTURE_COORDINATES);
-        uTextureUnitLocation = GLES20.glGetAttribLocation(program, U_TEXTURE_UNIT);
+        uTextureUnitLocation = GLES20.glGetUniformLocation(program, U_TEXTURE_UNIT);
 
         initTexture();
 
