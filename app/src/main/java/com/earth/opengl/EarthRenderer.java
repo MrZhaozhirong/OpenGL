@@ -8,6 +8,7 @@ import android.util.Log;
 
 import com.earth.opengl.shape.Ball;
 import com.earth.opengl.shape.RollBoundaryDirection;
+import com.earth.opengl.shape.YUV_ELEMENT_Ball;
 import com.earth.opengl.utils.LoggerConfig;
 import com.earth.opengl.utils.MatrixHelper;
 
@@ -22,8 +23,8 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
     public final static String TAG = "OpenGLRenderer";
 
     private Context context;
-    Ball ball;
-
+    //Ball ball;
+    YUV_ELEMENT_Ball ball;
     public EarthRenderer(Context context) {
         this.context = context;
     }
@@ -37,7 +38,7 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
         //打开背面剪裁
         GLES20.glCullFace(GLES20.GL_BACK);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
-        ball = new Ball(context);
+        ball = new YUV_ELEMENT_Ball(context);
     }
 
     @Override

@@ -15,8 +15,6 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 
-import static android.view.View.Y;
-
 
 /**
  * Created by nicky on 2017/4/17.
@@ -77,9 +75,9 @@ public class YUV_ELEMENT_Ball {
         aPositionLocation = GLES20.glGetAttribLocation(program, A_POSITION);
         uMatrixLocation = GLES20.glGetUniformLocation(program, U_MATRIX);
         aTextureCoordinates = GLES20.glGetAttribLocation(program, A_TEXTURE_COORDINATES);
-        uLocationSamplerY = GLES20.glGetAttribLocation(program, SAMPLER_Y);
-        uLocationSamplerU = GLES20.glGetAttribLocation(program, SAMPLER_U);
-        uLocationSamplerV = GLES20.glGetAttribLocation(program, SAMPLER_V);
+        uLocationSamplerY = GLES20.glGetUniformLocation(program, SAMPLER_Y);
+        uLocationSamplerU = GLES20.glGetUniformLocation(program, SAMPLER_U);
+        uLocationSamplerV = GLES20.glGetUniformLocation(program, SAMPLER_V);
 
         initTexture();
 
@@ -155,10 +153,8 @@ public class YUV_ELEMENT_Ball {
                 float s1 = (hAngle + angleSpan)/360.0f ;
                 float t1 = 1 - (vAngle + angleSpan) / 180.0f;
                 // Android设备y坐标是反向的，正常图显示到设备上是水平颠倒的。
-                // 解决方案就是loadTexture纹理设置纹理包装时，纹理T坐标（y）设置镜面重复
-                // ball读取纹理的时候  t范围坐标取正常值+1
-                t0 = t0 + 1;
-                t1 = t1 + 1;
+                t0 = 1 - t0;
+                t1 = 1 - t1;
 
                 textureVertix.add(s1);
                 textureVertix.add(t0);
@@ -227,26 +223,26 @@ public class YUV_ELEMENT_Ball {
         GLES20.glUseProgram(program);
     }
 
-    private void initTexture() {
+    private boolean initTexture() {
+
+        GLES20.glUniform1i(uLocationSamplerY, 0); // => GLES20.GL_TEXTURE0
+        GLES20.glUniform1i(uLocationSamplerU, 1); // => GLES20.GL_TEXTURE1
+        GLES20.glUniform1i(uLocationSamplerV, 2); // => GLES20.GL_TEXTURE2
         int[] yuvTextureIDs = TextureHelper.loadYUVTexture(context, R.raw.yuv_test_pic);
-        if(yuvTextureIDs.length != 3) {
+        if(yuvTextureIDs == null || yuvTextureIDs.length != 3) {
             Log.w(TAG,"yuvTextureIDs object's length not equals 3 !");
-            return;
+            return false;
         }
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[0]);
-        GLES20.glUniform1i(uLocationSamplerY, 0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[1]);
-        GLES20.glUniform1i(uLocationSamplerU, 0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[2]);
-        GLES20.glUniform1i(uLocationSamplerV, 0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+
+        return true;
     }
 
     public void draw(){

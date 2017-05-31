@@ -7,7 +7,6 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.util.Log;
 
-import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -76,8 +75,8 @@ public class TextureHelper {
         return textureObjectIds[0];
     }
 
-    public static int imageWidth = 3040;
-    public static int imageHeight = 1520;
+    public static int imageWidth = 2048;
+    public static int imageHeight = 1024;
     public static int[] loadYUVTexture(Context context, int resourceId){
         ByteBuffer dataBuffer = null;
         try{
@@ -91,6 +90,7 @@ public class TextureHelper {
             dataBuffer.position(0);
         }catch (Exception ex){
             ex.printStackTrace();
+            return null;
         }
 
         //加载SamplerY
@@ -101,16 +101,22 @@ public class TextureHelper {
             return null;
         }
         int idxY = 0;
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        //GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _samplerYTexture[0]);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_MIRRORED_REPEAT);
+        //GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_MIRRORED_REPEAT);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
         dataBuffer.clear();
+        dataBuffer.position(idxY);
         GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0,
                             GLES20.GL_LUMINANCE, imageWidth, imageHeight,
                             0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE,
                             dataBuffer);
+        //GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+
         //加载SamplerU
         final int[] _samplerUTexture = new int[1];
         GLES20.glGenTextures(1, _samplerUTexture, 0);
@@ -118,11 +124,13 @@ public class TextureHelper {
             Log.w(TAG,"_samplerUTexture Could not generate a new OpenGL texture object!");
             return null;
         }
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+        //GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _samplerUTexture[0]);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_MIRRORED_REPEAT);
+        //GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_MIRRORED_REPEAT);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
         dataBuffer.clear();
         int idxU = imageWidth * imageHeight;
         dataBuffer.position(idxU);
@@ -130,6 +138,9 @@ public class TextureHelper {
                             GLES20.GL_LUMINANCE, imageWidth/2, imageHeight/2,
                             0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE,
                             dataBuffer);
+        //GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+
         //加载SamplerV
         final int[] _samplerVTexture = new int[1];
         GLES20.glGenTextures(1, _samplerVTexture, 0);
@@ -137,11 +148,13 @@ public class TextureHelper {
             Log.w(TAG,"_samplerVTexture Could not generate a new OpenGL texture object!");
             return null;
         }
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
+        //GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _samplerVTexture[0]);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_MIRRORED_REPEAT);
+        //GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_MIRRORED_REPEAT);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
         dataBuffer.clear();
         int idxV = idxU + (idxU / 4);
         dataBuffer.position(idxV);
@@ -149,6 +162,9 @@ public class TextureHelper {
                             GLES20.GL_LUMINANCE, imageWidth/2, imageHeight/2,
                             0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE,
                             dataBuffer);
+        //GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+
         //返回纹理ID
         int[] result = new int[3];
         result[0] = _samplerYTexture[0];
