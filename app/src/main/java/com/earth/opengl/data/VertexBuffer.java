@@ -6,13 +6,13 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-import static com.pixel.opengl.Contants.BYTES_PER_FLOAT;
-
 /**
  * Created by ZZR on 2017/2/22.
  */
 
 public class VertexBuffer {
+
+    public static final int BYTES_PER_FLOAT = 4;
 
     private final int bufferId;
 
@@ -47,8 +47,8 @@ public class VertexBuffer {
     }
 
 
-    public void setVertexAttribPointer(int dataOffset, int attributeLocation,
-                                       int componentCount, int stride){
+    public void setVertexAttribPointer(int attributeLocation,
+                                       int componentCount, int stride, int dataOffset){
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, bufferId);
 
         GLES20.glVertexAttribPointer(attributeLocation, componentCount, GLES20.GL_FLOAT,

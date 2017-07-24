@@ -30,14 +30,11 @@ public class YUV_ELEMENT_Ball {
     public float mfingerRotationY = 0;
     public float[] mMatrixFingerRotationX = new float[16];
     public float[] mMatrixFingerRotationY = new float[16];
-    public final static float SCALE_MAX_VALUE=1.0f;
-    public final static float SCALE_MIN_VALUE=-1.0f;
-    public final static double overture = 45;
     public float zoomTimes = 0.0f;
     //** 惯性自滚标志
     public boolean gestureInertia_isStop = true;
     //** 纵角度限制相关
-    public RollBoundaryDirection boundaryDirection = RollBoundaryDirection.NORMAL;
+    public BallRollBoundaryDirection boundaryDirection = BallRollBoundaryDirection.NORMAL;
     public double moving_count_auto_return = 0.0f;
     //*****************************************************************
     private final Context context;
@@ -172,7 +169,6 @@ public class YUV_ELEMENT_Ball {
 
                 offset += 4; // 4个顶点
 
-
             }
         }
         // *****************************************************************
@@ -216,7 +212,7 @@ public class YUV_ELEMENT_Ball {
     }
 
     private boolean initTexture() {
-        int[] yuvTextureIDs = TextureHelper.loadYUVTexture(context, R.raw.yuv_test_pic);
+        int[] yuvTextureIDs = TextureHelper.loadYUVTexture(context, R.raw.yuv_test_pic, 2048,1024);
         if(yuvTextureIDs == null || yuvTextureIDs.length != 3) {
             Log.w(TAG,"yuvTextureIDs object's length not equals 3 !");
             return false;

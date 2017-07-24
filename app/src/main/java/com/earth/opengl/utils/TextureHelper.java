@@ -75,9 +75,8 @@ public class TextureHelper {
         return textureObjectIds[0];
     }
 
-    public static int imageWidth = 2048;
-    public static int imageHeight = 1024;
-    public static int[] loadYUVTexture(Context context, int resourceId){
+
+    public static int[] loadYUVTexture(Context context, int resourceId, int width, int height){
         ByteBuffer dataBuffer = null;
         try{
             InputStream is = context.getResources().openRawResource(resourceId);
@@ -111,7 +110,7 @@ public class TextureHelper {
         dataBuffer.clear();
         dataBuffer.position(idxY);
         GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0,
-                            GLES20.GL_LUMINANCE, imageWidth, imageHeight,
+                            GLES20.GL_LUMINANCE, width, height,
                             0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE,
                             dataBuffer);
         //GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
@@ -132,10 +131,10 @@ public class TextureHelper {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
         dataBuffer.clear();
-        int idxU = imageWidth * imageHeight;
+        int idxU = width * height;
         dataBuffer.position(idxU);
         GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0,
-                            GLES20.GL_LUMINANCE, imageWidth/2, imageHeight/2,
+                            GLES20.GL_LUMINANCE, width/2, height/2,
                             0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE,
                             dataBuffer);
         //GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
@@ -159,7 +158,7 @@ public class TextureHelper {
         int idxV = idxU + (idxU / 4);
         dataBuffer.position(idxV);
         GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0,
-                            GLES20.GL_LUMINANCE, imageWidth/2, imageHeight/2,
+                            GLES20.GL_LUMINANCE, width/2, height/2,
                             0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE,
                             dataBuffer);
         //GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
@@ -223,6 +222,17 @@ public class TextureHelper {
 
         return textureObjectIds[0];
     }
+
+
+
+
+
+
+
+
+
+
+
 
     public static void updateTexture(Context context, int resourceId, int textureId){
         final BitmapFactory.Options options = new BitmapFactory.Options();

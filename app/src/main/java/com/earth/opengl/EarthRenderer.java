@@ -6,9 +6,8 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
 
-import com.earth.opengl.shape.Ball;
-import com.earth.opengl.shape.RollBoundaryDirection;
-import com.earth.opengl.shape.YUV_ELEMENT_Ball;
+import com.earth.opengl.shape.BallRollBoundaryDirection;
+import com.earth.opengl.shape.PANORAMA_Ball;
 import com.earth.opengl.utils.LoggerConfig;
 import com.earth.opengl.utils.MatrixHelper;
 
@@ -24,7 +23,12 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
 
     private Context context;
     //Ball ball;
-    YUV_ELEMENT_Ball ball;
+    //YUV_ELEMENT_Ball ball;
+    PANORAMA_Ball ball;
+    public final static float SCALE_MAX_VALUE=1.0f;
+    public final static float SCALE_MIN_VALUE=-1.0f;
+    public final static double overture = 45;
+
     public EarthRenderer(Context context) {
         this.context = context;
     }
@@ -33,12 +37,13 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         //设置屏幕背景色RGBA
         GLES20.glClearColor(0.0f,0.0f,0.0f, 1.0f);
+        //打开深度检测
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-//        GLES20.glEnable(GLES20.GL_BLEND);
+        //GLES20.glEnable(GLES20.GL_BLEND);
         //打开背面剪裁
         GLES20.glCullFace(GLES20.GL_BACK);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
-        ball = new YUV_ELEMENT_Ball(context);
+        ball = new PANORAMA_Ball(context);
     }
 
     @Override
@@ -48,7 +53,7 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
         // 调用此方法计算产生透视投影矩阵
         //MatrixHelper.setProjectFrustum(-ratio,ratio, -1, 1, 0.1f, 400f);
         MatrixHelper.perspectiveM(MatrixHelper.mProjectionMatrix,
-                (float) Ball.overture,
+                (float) overture,
                 (float)width/(float)height, 0.1f, 400f);
         // 调用此方法产生摄像机9参数位置矩阵
         MatrixHelper.setCamera(0, 0, 3f, //摄像机位置
@@ -124,13 +129,13 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
             scale = 0.1f;
             ball.zoomTimes += 0.1;
         }
-        if(ball.zoomTimes > Ball.SCALE_MAX_VALUE){
+        if(ball.zoomTimes > SCALE_MAX_VALUE){
             scale = 0.0f;
-            ball.zoomTimes = Ball.SCALE_MAX_VALUE;
+            ball.zoomTimes = SCALE_MAX_VALUE;
         }
-        if(ball.zoomTimes < Ball.SCALE_MIN_VALUE){
+        if(ball.zoomTimes < SCALE_MIN_VALUE){
             scale = 0.0f;
-            ball.zoomTimes = Ball.SCALE_MIN_VALUE;
+            ball.zoomTimes = SCALE_MIN_VALUE;
         }
         if(LoggerConfig.ON){
             Log.w(TAG, "MultiTouch ball has zoom times: "+ball.zoomTimes*10);
@@ -208,7 +213,7 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
             while(!ball.gestureInertia_isStop){
 //---------------------------------------------------------------------------------
                 float offsetY = -mYVelocity / 2000;
-                if(ball.boundaryDirection == RollBoundaryDirection.NORMAL ) {
+                if(ball.boundaryDirection == BallRollBoundaryDirection.NORMAL ) {
                     ball.mfingerRotationX = ball.mfingerRotationX + offsetY;
                     if(ball.mfingerRotationX%360 > 90 ){
                         ball.mfingerRotationX = 90;
@@ -217,11 +222,11 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
                         ball.mfingerRotationX = -90;
                     }
                 }else
-                if(ball.boundaryDirection == RollBoundaryDirection.BOTTOM ){
+                if(ball.boundaryDirection == BallRollBoundaryDirection.BOTTOM ){
                     double temp = seriesMoveReturn(ball.mfingerRotationX);
                     ball.mfingerRotationX -= temp;
                 }else
-                if(ball.boundaryDirection == RollBoundaryDirection.TOP ){
+                if(ball.boundaryDirection == BallRollBoundaryDirection.TOP ){
                     double temp = seriesMoveReturn(ball.mfingerRotationX);
                     ball.mfingerRotationX += temp;
                 }else{
@@ -242,7 +247,7 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
 //---------------------------------------------------------------------------------
                 if(Math.abs(mYVelocity - 0.97f*mYVelocity) < 0.00001f
                         || Math.abs(mXVelocity - 0.97f*mXVelocity) < 0.00001f){
-                    if(ball.boundaryDirection == RollBoundaryDirection.NORMAL){
+                    if(ball.boundaryDirection == BallRollBoundaryDirection.NORMAL){
                         ball.gestureInertia_isStop = true;
                     }
                 }
@@ -272,11 +277,11 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
 
     private void updateBallBoundary() {
         if(ball.mfingerRotationX > 90) {
-            ball.boundaryDirection = RollBoundaryDirection.BOTTOM;
+            ball.boundaryDirection = BallRollBoundaryDirection.BOTTOM;
         }else if(ball.mfingerRotationX < -90){
-            ball.boundaryDirection = RollBoundaryDirection.TOP;
+            ball.boundaryDirection = BallRollBoundaryDirection.TOP;
         }else{
-            ball.boundaryDirection = RollBoundaryDirection.NORMAL;
+            ball.boundaryDirection = BallRollBoundaryDirection.NORMAL;
         }
         if(LoggerConfig.ON){
             Log.w(TAG,"ball.boundaryDirection : "+ ball.boundaryDirection.name());
