@@ -19,12 +19,15 @@ import javax.microedition.khronos.opengles.GL10;
  * Created by nicky on 2017/4/17.
  */
 public class EarthRenderer implements GLSurfaceView.Renderer {
-    public final static String TAG = "OpenGLRenderer";
+    public final static String TAG = "EarthRenderer";
 
     private Context context;
     //Ball ball;
     //YUV_ELEMENT_Ball ball;
     PANORAMA_Ball ball;
+    //Onefisheye360 ball;
+    //Onefisheye180 ball;
+
     public final static float SCALE_MAX_VALUE=1.0f;
     public final static float SCALE_MIN_VALUE=-1.0f;
     public final static double overture = 45;

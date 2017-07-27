@@ -47,9 +47,8 @@ public class PANORAMA_Ball {
     private static final int BYTES_PER_FLOAT = 4;
     private static final int POSITION_COORDINATE_COMPONENT_COUNT = 3; // 每个顶点的坐标数 x y z
     private static final int TEXTURE_COORDINATE_COMPONENT_COUNT = 2; // 每个纹理坐标为 S T两个
-    //*****************************************************************
-    PanoramaBallShaderProgram pbShader;
-    //**************************坐标改成索引************************************
+    //**************************坐标改成索引***************************************
+    private PanoramaBallShaderProgram pbShader;
     private PanoramaOut out;
     private VertexBuffer verticesBuffer;
     private VertexBuffer texCoordsBuffer;

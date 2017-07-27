@@ -14,7 +14,7 @@ public class ShaderProgram {
 
     protected final int programId;
 
-    protected ShaderProgram(Context context, int vertexShaderResourceId,
+    public ShaderProgram(Context context, int vertexShaderResourceId,
                             int fragmentShaderResourceId){
         programId = ShaderHelper.buildProgram(
                 TextResourceReader.readTextFileFromResource(context,vertexShaderResourceId),

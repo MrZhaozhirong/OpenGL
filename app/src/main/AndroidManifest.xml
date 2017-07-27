@@ -12,31 +12,22 @@
             android:screenOrientation="sensor">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
         <activity android:name="com.particles.opengl.ParticlesActivity"
-            android:screenOrientation="sensor">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-            </intent-filter>
-        </activity>
+            android:screenOrientation="sensor"/>
 
         <activity android:name="com.pixel.opengl.OpenGLActivity"
-            android:screenOrientation="sensor">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-            </intent-filter>
-        </activity>
+            android:screenOrientation="sensor"/>
 
         <activity android:name="com.earth.opengl.EarthActivity"
-                  android:screenOrientation="sensor">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-            </intent-filter>
-        </activity>
+                  android:screenOrientation="sensor"/>
+
+        <activity android:name="com.earth.opengl.BowlActivity"
+                  android:screenOrientation="sensor"/>
+
     </application>
 
 </manifest>

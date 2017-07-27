@@ -7,29 +7,23 @@ import android.content.pm.ConfigurationInfo;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
-import android.view.VelocityTracker;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.pixel.opengl.util.Geometry;
-
 /**
- * Created by nicky on 2017/4/17.
+ * Created by zzr on 2017/7/26.
  */
 
-public class EarthActivity extends Activity implements View.OnTouchListener {
-    public final static String TAG = "EarthActivity";
+public class BowlActivity extends Activity implements View.OnTouchListener {
+
+    private static final String TAG = "BowlActivity";
     private GLSurfaceView glSurfaceView;
     private boolean rendererSet = false;
-
-    final EarthRenderer earthRenderer = new EarthRenderer(this);
-
-    // 速度相关 http://leonard-peng.github.io/2016/02/21/android-basic-gesture-detec/
-    // 速度相关 http://blog.csdn.net/bingxianwu/article/details/7446799
-    private VelocityTracker mVelocityTracker = null;
+    final BowlRenderer bowlRenderer = new BowlRenderer(this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +44,7 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                         || Build.MODEL.contains("Android SDK built for x86")));
         if(supportsEs2){
             glSurfaceView.setEGLContextClientVersion(2);
-            glSurfaceView.setRenderer(earthRenderer);
+            glSurfaceView.setRenderer(bowlRenderer);
             rendererSet = true;
         } else {
             Toast.makeText(this, "this device does not support OpenGL ES 2.0",
@@ -61,31 +55,6 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
         setContentView(glSurfaceView);
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if(rendererSet){
-            glSurfaceView.onPause();
-        }
-        if(null != mVelocityTracker) {
-            mVelocityTracker.clear();
-            mVelocityTracker.recycle();
-            mVelocityTracker = null;
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (rendererSet){
-            glSurfaceView.onResume();
-        }
-        if (mVelocityTracker == null) {
-            mVelocityTracker = VelocityTracker.obtain();
-        } else {
-            mVelocityTracker.clear();
-        }
-    }
 
     private int getGLVersion(){
         ActivityManager activityManager =
@@ -96,11 +65,33 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
         return reqGlEsVersion;
     }
 
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (rendererSet){
+            glSurfaceView.onResume();
+        }
+    }
+
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(rendererSet){
+            glSurfaceView.onPause();
+        }
+    }
+
+
+
+    private MotionEvent mCurrentDownEvent;
+    private MotionEvent mPreviousUpEvent;
     private int mode = 0;
     float oldDist;
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-
+        // -------------判断多少个触碰点---------------------------------
         switch (event.getAction() & MotionEvent.ACTION_MASK){
             case MotionEvent.ACTION_DOWN:
                 mode = 1;
@@ -113,87 +104,89 @@ public class EarthActivity extends Activity implements View.OnTouchListener {
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
                 oldDist = spacing(event);
+                Log.d(TAG,"ACTION_POINTER_DOWN oldDist : "+oldDist);
                 mode = 2;
                 break;
         }
         // ------------------------------------------------------------
-        if(event.getAction() == MotionEvent.ACTION_DOWN){
+        if(event.getAction() == MotionEvent.ACTION_UP){
+            if(mPreviousUpEvent!=null){
+                mCurrentDownEvent = MotionEvent.obtain(event);
+            }else{
+                mPreviousUpEvent = MotionEvent.obtain(event);
+            }
+            if(mPreviousUpEvent!=null && mCurrentDownEvent!=null){
+                if(checkDoubleClick(mPreviousUpEvent, mCurrentDownEvent)){
+                    glSurfaceView.queueEvent(new Runnable() {
+                        @Override
+                        public void run() {
+                            bowlRenderer.handleDoubleClick();
+                        }
+                    });
+                }
+                mPreviousUpEvent = null;
+                mCurrentDownEvent = null;
+            }
+        }
+        else if(event.getAction() == MotionEvent.ACTION_DOWN){
             if (mode == 1) {
                 final float x = event.getX();
                 final float y = event.getY();
                 glSurfaceView.queueEvent(new Runnable() {
                     @Override
                     public void run() {
-                        earthRenderer.handleTouchDown(x, y);
+                        bowlRenderer.handleTouchDown(x, y);
                     }
                 });
-                //20170425 增加速度
-                if (mVelocityTracker == null) {
-                    mVelocityTracker = VelocityTracker.obtain();
-                } else {
-                    mVelocityTracker.clear();
-                }
-                mVelocityTracker.addMovement(event);
             }
         }
-        else if(event.getAction() == MotionEvent.ACTION_UP){
-            final float x = event.getX();
-            final float y = event.getY();
-            final float xVelocity = mVelocityTracker.getXVelocity();
-            final float yVelocity = mVelocityTracker.getYVelocity();
-            glSurfaceView.queueEvent(new Runnable() {
-                    @Override
-                    public void run() {
-                        earthRenderer.handleTouchUp(x, y, xVelocity, yVelocity);
-                    }
-                });
-
-        }
-        else if(event.getAction() ==MotionEvent.ACTION_MOVE) {
+        else if(event.getAction() ==MotionEvent.ACTION_MOVE){
             if (mode == 2) {
                 //双指操作
                 float newDist = spacing(event);
-                if ( (newDist > oldDist + 10) || (newDist < oldDist - 10) ) {
+                if ( (newDist > oldDist + 10) || (newDist < oldDist - 15) ) {
                     final float distance = newDist - oldDist;
                     glSurfaceView.queueEvent(new Runnable() {
                         @Override
                         public void run() {
-                            earthRenderer.handleMultiTouch(distance);
+                            bowlRenderer.handleMultiTouch(distance);
                         }
                     });
                     oldDist = newDist;
                 }
             }
             if(mode == 1){//单指操作
-                mVelocityTracker.addMovement(event);
-                mVelocityTracker.computeCurrentVelocity(1000);
                 // 在获取速度之前总要进行以上两步
                 final float x = event.getX();
                 final float y = event.getY();
                 glSurfaceView.queueEvent(new Runnable() {
                     @Override
                     public void run() {
-                        earthRenderer.handleTouchDrag(x,y);
+                        bowlRenderer.handleTouchMove(x,y);
                     }
                 });
             }
         }
-        return true;//返回 true 表示该动作已被处理
+        return true;
     }
 
-
-
-
-
-    private float spacing(Geometry.Point oldPoint,Geometry.Point newPoint){
-        float x = oldPoint.x - newPoint.x;
-        float y = oldPoint.y - newPoint.y;
-        return (float) Math.sqrt(x*x + y*y);
-    }
     private float spacing(MotionEvent event) {
         float x = event.getX(0) - event.getX(1);
         float y = event.getY(0) - event.getY(1);
         return (float) Math.sqrt(x * x + y * y);
     }
 
+    private final int DOUBLE_TAP_TIMEOUT = 200;
+    private boolean checkDoubleClick(MotionEvent firstUp, MotionEvent secondUp) {
+        long l = secondUp.getEventTime() - firstUp.getEventTime();
+        Log.d(TAG,"secondUp.getEventTime() - firstUp.getEventTime() = "+l);
+        if (secondUp.getEventTime() - firstUp.getEventTime() > DOUBLE_TAP_TIMEOUT) {
+            return false;
+        }
+        int deltaX = (int) secondUp.getX() - (int) firstUp.getX();
+        int deltaY = (int) secondUp.getY() - (int) firstUp.getY();
+        int i = deltaX * deltaX + deltaY * deltaY;
+        Log.d(TAG,"deltaX * deltaX + deltaY * deltaY = "+i);
+        return deltaX * deltaX + deltaY * deltaY < 5000;
+    }
 }
