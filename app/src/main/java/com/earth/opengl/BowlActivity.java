@@ -176,7 +176,7 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
         return (float) Math.sqrt(x * x + y * y);
     }
 
-    private final int DOUBLE_TAP_TIMEOUT = 200;
+    private final int DOUBLE_TAP_TIMEOUT = 500;
     private boolean checkDoubleClick(MotionEvent firstUp, MotionEvent secondUp) {
         long l = secondUp.getEventTime() - firstUp.getEventTime();
         Log.d(TAG,"secondUp.getEventTime() - firstUp.getEventTime() = "+l);
@@ -189,4 +189,8 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
         Log.d(TAG,"deltaX * deltaX + deltaY * deltaY = "+i);
         return deltaX * deltaX + deltaY * deltaY < 5000;
     }
+
+
+
+
 }
