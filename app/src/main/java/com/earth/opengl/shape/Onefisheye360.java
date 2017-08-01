@@ -33,9 +33,15 @@ public class Onefisheye360 {
     //** 单手双手操作相关
     public float mLastX;
     public float mLastY;
+    public float mfingerRotationX = 0;
+    public float mfingerRotationY = 0;
     public float mfingerRotationZ = 0;
+    public float[] mMatrixFingerRotationX = new float[16];
+    public float[] mMatrixFingerRotationY = new float[16];
     public float[] mMatrixFingerRotationZ = new float[16];
     public float zoomTimes = 0.0f;
+    //** 惯性自滚标志
+    public boolean gestureInertia_isStop = true;
     //*****************************************************************
     private final Context context;
     private int numElements = 0;

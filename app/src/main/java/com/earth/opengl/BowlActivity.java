@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -72,6 +73,11 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
         if (rendererSet){
             glSurfaceView.onResume();
         }
+        if (mVelocityTracker == null) {
+            mVelocityTracker = VelocityTracker.obtain();
+        } else {
+            mVelocityTracker.clear();
+        }
     }
 
 
@@ -81,10 +87,15 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
         if(rendererSet){
             glSurfaceView.onPause();
         }
+        if(null != mVelocityTracker) {
+            mVelocityTracker.clear();
+            mVelocityTracker.recycle();
+            mVelocityTracker = null;
+        }
     }
 
 
-
+    private VelocityTracker mVelocityTracker = null;
     private MotionEvent mCurrentDownEvent;
     private MotionEvent mPreviousUpEvent;
     private int mode = 0;
@@ -110,6 +121,7 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
         }
         // ------------------------------------------------------------
         if(event.getAction() == MotionEvent.ACTION_UP){
+            //---双击屏幕--------
             if(mPreviousUpEvent!=null){
                 mCurrentDownEvent = MotionEvent.obtain(event);
             }else{
@@ -127,6 +139,17 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
                 mPreviousUpEvent = null;
                 mCurrentDownEvent = null;
             }
+            //---滑动屏幕手指离开惯性--------
+            final float x = event.getX();
+            final float y = event.getY();
+            final float xVelocity = mVelocityTracker.getXVelocity();
+            final float yVelocity = mVelocityTracker.getYVelocity();
+            glSurfaceView.queueEvent(new Runnable() {
+                @Override
+                public void run() {
+                    bowlRenderer.handleTouchUp(x, y, xVelocity, yVelocity);
+                }
+            });
         }
         else if(event.getAction() == MotionEvent.ACTION_DOWN){
             if (mode == 1) {
@@ -138,6 +161,13 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
                         bowlRenderer.handleTouchDown(x, y);
                     }
                 });
+
+                if (mVelocityTracker == null) {
+                    mVelocityTracker = VelocityTracker.obtain();
+                } else {
+                    mVelocityTracker.clear();
+                }
+                mVelocityTracker.addMovement(event);
             }
         }
         else if(event.getAction() ==MotionEvent.ACTION_MOVE){
@@ -155,8 +185,7 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
                     oldDist = newDist;
                 }
             }
-            if(mode == 1){//单指操作
-                // 在获取速度之前总要进行以上两步
+            if(mode == 1){
                 final float x = event.getX();
                 final float y = event.getY();
                 glSurfaceView.queueEvent(new Runnable() {
@@ -165,6 +194,9 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
                         bowlRenderer.handleTouchMove(x,y);
                     }
                 });
+
+                mVelocityTracker.addMovement(event);
+                mVelocityTracker.computeCurrentVelocity(1000);
             }
         }
         return true;

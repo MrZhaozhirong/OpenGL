@@ -24,8 +24,8 @@ import javax.microedition.khronos.opengles.GL10;
  */
 public class BowlRenderer implements GLSurfaceView.Renderer {
     public final static String TAG = "BowlRenderer";
-    public final static float SCALE_MAX_VALUE=1.0f;
-    public final static float SCALE_MIN_VALUE=-1.0f;
+    public final static float SCALE_MAX_VALUE=3.0f;
+    public final static float SCALE_MIN_VALUE=0.0f;
     public final static double overture = 45;
 
 
@@ -50,6 +50,8 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
         GLES20.glEnable(GLES20.GL_CULL_FACE);
         bowl = new Onefisheye360(context);
         eye = new BowlViewport();
+
+        timer = new Timer();
         timer.schedule(autoScrollTimerTask, 5000, 10000); // 5s后执行task,经过10s再次执行
     }
 
@@ -61,11 +63,14 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
         //MatrixHelper.setProjectFrustum(-ratio,ratio, -1, 1, 0.1f, 400f);
         MatrixHelper.perspectiveM(MatrixHelper.mProjectionMatrix,
                 (float) overture,
-                (float)width/(float)height, 0.1f, 400f);
+                (float)width/(float)height, 0.1f, 100f);
         // 调用此方法产生摄像机9参数位置矩阵
         MatrixHelper.setCamera(0, 0, -4f, //摄像机位置
                                 0f, 0f, 0.0f, //摄像机目标视点
                                 0f, 1.0f, 0.0f);//摄像机头顶方向向量
+        eye.setCameraVector(0, 0, -4f);
+        eye.setTargetViewVector(0f, 0f, 0.0f);
+        eye.setCameraUpVector(0f, 1.0f, 0.0f);
     }
 
     @Override
@@ -82,11 +87,13 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     private void updateBallMatrix() {
 
         Matrix.setIdentityM(MatrixHelper.mModelMatrix, 0);
+        Matrix.scaleM(MatrixHelper.mModelMatrix,0,1.0f,1.0f,1.0f);
+
+        Matrix.setIdentityM(bowl.mMatrixFingerRotationX, 0);
         Matrix.setIdentityM(bowl.mMatrixFingerRotationZ, 0);
-        if(bowl.mfingerRotationZ > 360 || bowl.mfingerRotationZ < -360){
-            bowl.mfingerRotationZ = bowl.mfingerRotationZ % 360;
-        }
-        Matrix.rotateM(MatrixHelper.mModelMatrix, 0, bowl.mfingerRotationZ, 0, 0, 1);
+        Matrix.rotateM(bowl.mMatrixFingerRotationZ, 0, bowl.mfingerRotationX, 0, 0, 1);
+        Matrix.rotateM(bowl.mMatrixFingerRotationX, 0, bowl.mfingerRotationY, 1, 0, 0);
+        Matrix.multiplyMM(MatrixHelper.mModelMatrix,0, bowl.mMatrixFingerRotationX,0, bowl.mMatrixFingerRotationZ,0 );
     }
 
 
@@ -96,22 +103,93 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
 
 
     //---------------------各种操作-------------------------------------------------
-    //双击屏幕
+    //双击屏幕 切换视角
     public int currentPerspectiveMode = BowlViewport.MODE_OVER_LOOK;
     void handleDoubleClick(){
         //把放大缩小还原
         bowl.zoomTimes = 0;
-        if(currentPerspectiveMode == BowlViewport.MODE_OVER_LOOK){
-            MatrixHelper.setCamera(0, 0, -1.5f,
-                    0f, 1.0f, 1.0f,
-                    0f, 0.0f, -1.0f);
-            currentPerspectiveMode = BowlViewport.MODE_ENDOSCOPE;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                boolean transforming = true;
+                while(transforming){
+                    try {
+                        Thread.sleep(55);
+                        if(currentPerspectiveMode == BowlViewport.MODE_OVER_LOOK){
+                            transforming = transformToEndoscope();
+                        }else if(currentPerspectiveMode == BowlViewport.MODE_ENDOSCOPE){
+                            transforming = transformToOverlook();
+                        }
 
-        }else if(currentPerspectiveMode == BowlViewport.MODE_ENDOSCOPE){
-            MatrixHelper.setCamera(0, 0, -4f,
-                    0f, 0f, 0.0f,
-                    0f, 1.0f, 0.0f);
-            currentPerspectiveMode = BowlViewport.MODE_OVER_LOOK;
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                Log.w(TAG,"current mViewMatrix: "+"\n"+
+                        eye.cx+" "+eye.cy+" "+eye.cz+"\n"+
+                        eye.tx+" "+eye.ty+" "+eye.tz+"\n"+
+                        eye.upx+" "+eye.upy+" "+eye.upz+"\n");
+                Log.w(TAG,"mfingerRotationY : "+bowl.mfingerRotationY);
+                Log.w(TAG,"mfingerRotationX : "+bowl.mfingerRotationX);
+
+                currentPerspectiveMode =
+                        (currentPerspectiveMode == BowlViewport.MODE_OVER_LOOK?
+                                BowlViewport.MODE_ENDOSCOPE:BowlViewport.MODE_OVER_LOOK);
+            }
+        }).start();
+    }
+
+    private boolean transformToOverlook() {
+        boolean viewTransforming = true;
+        if(eye.cz >= -3.7f){
+            MatrixHelper.setCamera(eye.cx, eye.cy, eye.cz-=0.3f,
+                    eye.tx, eye.ty, eye.tz,
+                    eye.upx, eye.upy, eye.upz);
+        }else {
+            viewTransforming = false;
+        }
+
+        boolean modelTransforming = true;
+        if(bowl.mfingerRotationY > 4){
+            bowl.mfingerRotationY -= 4.0f;
+        }else{
+            modelTransforming = false;
+        }
+
+        bowl.mfingerRotationX += 0.1f;
+        isNeedAutoScroll = true;
+
+        if(viewTransforming || modelTransforming){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    private boolean transformToEndoscope() {
+        boolean viewTransforming = true;
+        if(eye.cz < -1.3f){
+            MatrixHelper.setCamera(eye.cx, eye.cy, eye.cz+=0.3f,
+                    eye.tx, eye.ty, eye.tz,
+                    eye.upx, eye.upy, eye.upz);
+        }else{
+            viewTransforming = false;
+        }
+
+        boolean modelTransforming = true;
+        if(bowl.mfingerRotationY < 40f){
+            bowl.mfingerRotationY += 4.0f;
+        }else{
+            modelTransforming = false;
+        }
+
+        bowl.mfingerRotationX += 0.1f;
+        isNeedAutoScroll = true;
+
+        if(viewTransforming || modelTransforming){
+            return true;
+        }else{
+            return false;
         }
     }
 
@@ -123,24 +201,86 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
             if(LoggerConfig.ON){
                 Log.w(TAG,"handleTouchUp bowl.mLastPosition x:"+x+"     y:"+y);
             }
+            isNeedAutoScroll = false;
+            if(timer!=null){
+                timer.purge();
+            }
         }
     }
+
+    //滑动惯性
+    public void handleTouchUp(final float x, final float y, final float xVelocity, final float yVelocity) {
+        if(bowl!=null){
+            bowl.mLastX = 0;
+            bowl.mLastY = 0;
+            bowl.gestureInertia_isStop = false;
+        }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    handleGestureInertia(x,y, xVelocity, yVelocity);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    private void handleGestureInertia(float x, float y, float xVelocity, float yVelocity)
+            throws InterruptedException {
+        if(bowl != null ){
+            bowl.gestureInertia_isStop = false;
+            float mXVelocity = xVelocity;
+            float mYVelocity = yVelocity;
+            while(!bowl.gestureInertia_isStop){
+                float offsetX = -mXVelocity / 2000;
+
+                bowl.mfingerRotationX += offsetX;
+
+                //----------------------------------------------------------------------------
+                if(Math.abs(mXVelocity - 0.97f*mXVelocity) < 0.00001f){
+                    bowl.gestureInertia_isStop = true;
+                }
+                mYVelocity = 0.975f*mYVelocity;
+                mXVelocity = 0.975f*mXVelocity;
+                Thread.sleep(5);
+            }
+        }
+    }
+
 
     //滑动
     void handleTouchMove(float x, float y) {
         if(bowl != null){
             float offsetX = bowl.mLastX - x;
-
-            bowl.mfingerRotationZ += offsetX/8;
-            Log.w(TAG, "offsetX/8 = "+offsetX/8);
+            float offsetY = bowl.mLastY - y;
+            bowl.mfingerRotationX += offsetX/10;
+            bowl.mfingerRotationY += offsetY/30;
+            if(currentPerspectiveMode == BowlViewport.MODE_ENDOSCOPE){
+                if(bowl.mfingerRotationY > 50){
+                    bowl.mfingerRotationY = 50;
+                }
+                if(bowl.mfingerRotationY < 40){
+                    bowl.mfingerRotationY = 40;
+                }
+            }else{  //currentPerspectiveMode == BowlViewport.MODE_OVER_LOOK
+                if(bowl.mfingerRotationY > 40f){
+                    bowl.mfingerRotationY = 40f;
+                }
+                if(bowl.mfingerRotationY < -20f){
+                    bowl.mfingerRotationY = -20f;
+                }
+            }
+            //Log.w(TAG, "mfingerRotationX : "+bowl.mfingerRotationX);
+            Log.w(TAG, "mfingerRotationY : "+bowl.mfingerRotationY);
             bowl.mLastX = x;
             bowl.mLastY = y;
         }
     }
 
-
     //自动旋转相关
-    private Timer timer = new Timer();
+    private Timer timer;
     TimerTask autoScrollTimerTask = new TimerTask(){
         @Override
         public void run() {
@@ -148,8 +288,21 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
         }
     };
     void autoRotated(){
-        bowl.mfingerRotationZ += 0.1;
+        bowl.mfingerRotationX += 0.1;
+        if(bowl.mfingerRotationX > 360 || bowl.mfingerRotationX < -360){
+            bowl.mfingerRotationX = bowl.mfingerRotationX % 360;
+        }
     }
+
+
+
+
+
+
+
+
+
+
 
 
     //双指操作

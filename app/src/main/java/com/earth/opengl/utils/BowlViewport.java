@@ -9,15 +9,15 @@ public class BowlViewport {
     public static int MODE_ENDOSCOPE = 1;
     public int currentPerspectiveMode = MODE_OVER_LOOK;
 
-    private float cx;// 摄像机位置x
-    private float cy;// 摄像机位置y
-    private float cz;// 摄像机位置z
-    private float tx;// 摄像机目标点x
-    private float ty;// 摄像机目标点y
-    private float tz;// 摄像机目标点z
-    private float upx;// 摄像机UP向量X分量
-    private float upy;// 摄像机UP向量Y分量
-    private float upz;// 摄像机UP向量Z分量
+    public float cx;// 摄像机位置x
+    public float cy;// 摄像机位置y
+    public float cz;// 摄像机位置z
+    public float tx;// 摄像机目标点x
+    public float ty;// 摄像机目标点y
+    public float tz;// 摄像机目标点z
+    public float upx;// 摄像机UP向量X分量
+    public float upy;// 摄像机UP向量Y分量
+    public float upz;// 摄像机UP向量Z分量
 
     public BowlViewport setPerspectiveMode(int mode){
         this.currentPerspectiveMode = mode;
