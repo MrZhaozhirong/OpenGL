@@ -114,13 +114,13 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
                 boolean transforming = true;
                 while(transforming){
                     try {
-                        Thread.sleep(55);
+                        Thread.sleep(45);
                         if(currentPerspectiveMode == BowlViewport.MODE_OVER_LOOK){
                             transforming = transformToEndoscope();
                         }else if(currentPerspectiveMode == BowlViewport.MODE_ENDOSCOPE){
                             transforming = transformToOverlook();
                         }
-
+                        isNeedAutoScroll = false;
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -135,6 +135,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
                 currentPerspectiveMode =
                         (currentPerspectiveMode == BowlViewport.MODE_OVER_LOOK?
                                 BowlViewport.MODE_ENDOSCOPE:BowlViewport.MODE_OVER_LOOK);
+                isNeedAutoScroll = true;
             }
         }).start();
     }
@@ -156,8 +157,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
             modelTransforming = false;
         }
 
-        bowl.mfingerRotationX += 0.1f;
-        isNeedAutoScroll = true;
+        bowl.mfingerRotationX += 3.0f;
 
         if(viewTransforming || modelTransforming){
             return true;
@@ -183,8 +183,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
             modelTransforming = false;
         }
 
-        bowl.mfingerRotationX += 0.1f;
-        isNeedAutoScroll = true;
+        bowl.mfingerRotationX += 3.0f;
 
         if(viewTransforming || modelTransforming){
             return true;
@@ -234,7 +233,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
             float mXVelocity = xVelocity;
             float mYVelocity = yVelocity;
             while(!bowl.gestureInertia_isStop){
-                float offsetX = -mXVelocity / 2000;
+                float offsetX = -mXVelocity / 800;
 
                 bowl.mfingerRotationX += offsetX;
 
@@ -288,7 +287,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
         }
     };
     void autoRotated(){
-        bowl.mfingerRotationX += 0.1;
+        bowl.mfingerRotationX += 0.1f;
         if(bowl.mfingerRotationX > 360 || bowl.mfingerRotationX < -360){
             bowl.mfingerRotationX = bowl.mfingerRotationX % 360;
         }
