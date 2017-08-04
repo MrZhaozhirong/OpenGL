@@ -10,6 +10,8 @@ import com.earth.opengl.shape.Onefisheye360;
 import com.earth.opengl.utils.BowlViewport;
 import com.earth.opengl.utils.LoggerConfig;
 import com.earth.opengl.utils.MatrixHelper;
+import com.langtao.device.FisheyeDeviceDataSource;
+import com.langtao.device.YUVFrame;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -28,14 +30,16 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     public final static float SCALE_MIN_VALUE=0.0f;
     public final static double overture = 45;
 
-
     private Context context;
-    private Onefisheye360 bowl;
     private boolean isNeedAutoScroll = false;
-    private BowlViewport eye;
+    public Onefisheye360 bowl;
+    public FisheyeDeviceDataSource fishEyeDevice;
+    public BowlViewport eye;
 
     public BowlRenderer(Context context) {
         this.context = context;
+        eye = new BowlViewport();
+        fishEyeDevice = new FisheyeDeviceDataSource(context);
     }
 
     @Override
@@ -48,8 +52,8 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
         //打开背面剪裁
         GLES20.glCullFace(GLES20.GL_BACK);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
+
         bowl = new Onefisheye360(context);
-        eye = new BowlViewport();
 
         timer = new Timer();
         timer.schedule(autoScrollTimerTask, 5000, 10000); // 5s后执行task,经过10s再次执行
@@ -77,11 +81,21 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     public void onDrawFrame(GL10 gl) {
         //清除深度缓冲与颜色缓冲
         GLES20.glClear( GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
-        updateBallMatrix();
-        if(isNeedAutoScroll){
-            autoRotated();
+        if(fishEyeDevice.isInitedFishDevice()){
+            updateTexture();
+            updateBallMatrix();
+            if(isNeedAutoScroll){
+                autoRotated();
+            }
+            bowl.draw();
         }
-        bowl.draw();
+    }
+
+    private void updateTexture() {
+        YUVFrame yuvFrame = fishEyeDevice.getYUVFrame();
+        if(yuvFrame==null) return;
+        bowl.updateTexture(yuvFrame);
+        yuvFrame.release();
     }
 
     private void updateBallMatrix() {
@@ -294,8 +308,12 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     }
 
 
-
-
+    public void resume(){
+        fishEyeDevice.startCollectFrame();
+    }
+    public void pause(){
+        fishEyeDevice.stopCollectFrame();
+    }
 
 
 
