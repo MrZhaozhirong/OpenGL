@@ -58,6 +58,17 @@ public class YUVFrame {
         this.nVLen=0;
     }
 
+    public int available() {
+        return this.nYLen + this.nULen + this.nVLen;
+    }
+
+    public byte[] getYuvbyte(){
+        byte[] ret = new byte[available()];
+        System.arraycopy(YDatabuffer.array(),0, ret,0,nYLen);
+        System.arraycopy(UDatabuffer.array(),0, ret,nYLen,nULen);
+        System.arraycopy(VDatabuffer.array(),0, ret,nYLen+nULen,nVLen);
+        return ret;
+    }
 
     public void setYDataBuffer(int nYLen, byte[] data){
         if(YDatabuffer==null){
@@ -88,4 +99,5 @@ public class YUVFrame {
         VDatabuffer.position(0);
         this.nVLen = nVLen;
     }
+
 }

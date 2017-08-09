@@ -15,7 +15,6 @@ import com.langtao.fisheye.OneFisheye360Param;
 import com.langtao.fisheye.OneFisheyeOut;
 import com.pixel.opengl.R;
 
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 
@@ -42,8 +41,9 @@ public class Onefisheye360 {
     public float[] mMatrixFingerRotationY = new float[16];
     public float[] mMatrixFingerRotationZ = new float[16];
     public float zoomTimes = 0.0f;
-    //** 惯性自滚标志
-    public boolean gestureInertia_isStop = true;
+    //** 惯性自转标志
+    public volatile boolean gestureInertia_isStop = true;
+    public volatile boolean pullupInertia_isStop = true;
     public int mFrameWidth;
     public int mFrameHeight;
     private int[] _yuvTextureIDs;
@@ -61,27 +61,43 @@ public class Onefisheye360 {
     private VertexBuffer texCoordsBuffer;
     private IndexBuffer indicesBuffer;
 
-    public Onefisheye360(Context context){
+    private int frameWidth;
+    private int frameHeight;
+    private YUVFrame initFrame;
+    //***************************************************************
+    public volatile boolean isInitialized = false;
+    public volatile boolean initializing = false;
+
+
+    public Onefisheye360(Context context,int frameWidth,int frameHeight,YUVFrame frame){
         this.context = context;
-
-        createBufferData();
-
-        buildProgram();
-
-        initTexture();
-
-        setAttributeStatus();
+        this.frameWidth = frameWidth;
+        this.frameHeight = frameHeight;
+        this.initFrame = frame;
+        initFishEye360Param(frameWidth, frameHeight, frame);
     }
 
+    public void initFishEye360Param(int width, int height, YUVFrame frame){
+        if(frame==null) return;
+        initializing = true;
+        Log.w(TAG, "initFishEye360Param width:"+width+"   height:"+height);
+        createBufferData( width, height, frame);
+        buildProgram();
+        initTexture();
+        setAttributeStatus();
+        isInitialized = true;
+        initializing = false;
+    }
 
-    private void createBufferData() {
+    private void createBufferData(int width,int height,YUVFrame frame) {
         if(out == null){
             try{
-                InputStream is = context.getResources().openRawResource(R.raw.img_20170725_down);
-                byte[] dataArray = new byte[is.available()];
-                is.read(dataArray);
+                //InputStream is = context.getResources().openRawResource(R.raw.img_20170725_down);
+                //byte[] dataArray = new byte[is.available()];
+                //is.read(dataArray);
                 OneFisheye360Param outParam = new OneFisheye360Param();
-                int ret = FishEyeProc.getOneFisheye360Param(dataArray, 1280, 1024, outParam);
+                //int ret = FishEyeProc.getOneFisheye360Param(dataArray, 1280, 1024, outParam);
+                int ret = FishEyeProc.getOneFisheye360Param(frame.getYuvbyte(), width, height, outParam);
                 if (ret != 0) {
                     return;
                 }
@@ -120,7 +136,8 @@ public class Onefisheye360 {
     }
 
     private boolean initTexture() {
-        int[] yuvTextureIDs = TextureHelper.loadYUVTexture(context, R.raw.img_20170725_down, 1280, 1024);
+        int[] yuvTextureIDs = TextureHelper.loadYUVTexture2(frameWidth, frameHeight,
+                initFrame.getYDatabuffer(),initFrame.getUDatabuffer(),initFrame.getVDatabuffer());
         if(yuvTextureIDs == null || yuvTextureIDs.length != 3) {
             Log.w(TAG,"yuvTextureIDs object's length not equals 3 !");
             return false;
@@ -149,7 +166,8 @@ public class Onefisheye360 {
         ByteBuffer uDatabuffer = yuvFrame.getUDatabuffer();
         ByteBuffer vDatabuffer = yuvFrame.getVDatabuffer();
 
-        if(width != mFrameWidth || height!= mFrameHeight){
+        //if(width != mFrameWidth || height!= mFrameHeight)
+        {
             //先去掉旧的纹理
             GLES20.glDeleteTextures(_yuvTextureIDs.length, _yuvTextureIDs, 0);
             //重新加载数据
@@ -168,12 +186,14 @@ public class Onefisheye360 {
             _yuvTextureIDs = yuvTextureIDs;
             mFrameWidth = width;
             mFrameHeight = height;
-        } else {
-            //长宽没变，更新纹理，不重建
-            TextureHelper.updateTexture2(_yuvTextureIDs[0], mFrameWidth, mFrameHeight, yDatabuffer);
-            TextureHelper.updateTexture2(_yuvTextureIDs[1], mFrameWidth, mFrameHeight, uDatabuffer);
-            TextureHelper.updateTexture2(_yuvTextureIDs[2], mFrameWidth, mFrameHeight, vDatabuffer);
         }
+//        else
+//        {
+//            //长宽没变，更新纹理，不重建
+//            TextureHelper.updateTexture2(_yuvTextureIDs[0], mFrameWidth, mFrameHeight, yDatabuffer);
+//            TextureHelper.updateTexture2(_yuvTextureIDs[1], mFrameWidth, mFrameHeight, uDatabuffer);
+//            TextureHelper.updateTexture2(_yuvTextureIDs[2], mFrameWidth, mFrameHeight, vDatabuffer);
+//        }
 
         return true;
     }

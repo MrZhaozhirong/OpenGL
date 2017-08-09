@@ -10,16 +10,24 @@ import android.content.pm.ConfigurationInfo;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.langtao.device.DeviceStatusManager;
+import com.langtao.device.FishEyeDeviceDataSource;
 import com.langtao.device.SDKinitUtil;
+import com.langtao.device.YUVFrame;
+import com.pixel.opengl.R;
+
+import java.lang.ref.WeakReference;
 
 import static com.langtao.device.DeviceStatusManager.DEV_ID;
 
@@ -30,11 +38,12 @@ import static com.langtao.device.DeviceStatusManager.DEV_ID;
 public class BowlActivity extends Activity implements View.OnTouchListener {
 
     private static final String TAG = "BowlActivity";
+    private RelativeLayout root;
     private GLSurfaceView glSurfaceView;
     private boolean rendererSet = false;
     private BowlRenderer bowlRenderer ;
-
-
+    private FishEyeDeviceDataSource fishEyeDevice;
+    private SafeHandler safeHandler = new SafeHandler(this);
     private DeviceStatusListener deviceStatusListener = new DeviceStatusListener();
     public class DeviceStatusListener extends BroadcastReceiver {
 
@@ -44,14 +53,11 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
 
             if(action.equalsIgnoreCase(DeviceStatusManager.DSM_ON_PUSH_SVRINFO_CALL) ||
                     action.equalsIgnoreCase(DeviceStatusManager.DSM_ON_CHANGED_CALL)){
-                if(bowlRenderer!=null && bowlRenderer.fishEyeDevice!=null){
-                    Bundle extras = intent.getExtras();
-                    String devId = (String) extras.get(DEV_ID);
-                    if("804000ad".equals(devId)){
-                        bowlRenderer.fishEyeDevice.connect("804000ad","admin","123456",0,1,2);
-                    } else if("v3027ee621".equals(devId)){
-                        bowlRenderer.fishEyeDevice.connect("v3027ee621","admin","admin",0,1,2);
-                    }
+
+                Bundle extras = intent.getExtras();
+                String devId = (String) extras.get(DEV_ID);
+                if("v3027ee621".equals(devId)){
+                    fishEyeDevice.connect("v3027ee621","admin","admin",0,1,2);
                 }
             }
 
@@ -65,9 +71,48 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        setContentView(R.layout.activity_bowl);
+        root = (RelativeLayout) this.findViewById(R.id.root);
+
+        //  设备相关部分代码
+        //"804000ad","admin","123456"
+        SDKinitUtil.gClient.addGID("v3027ee621");
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(DeviceStatusManager.DSM_ON_CHANGED_CALL);
+        filter.addAction(DeviceStatusManager.DSM_ON_PUSH_SVRINFO_CALL);
+        registerReceiver(deviceStatusListener,filter);
+
+        fishEyeDevice = new FishEyeDeviceDataSource(this);
+        fishEyeDevice.setYuvCallback(new FishEyeDeviceDataSource.YuvCallback() {
+            @Override
+            public void yuv_callback(int width, int height, YUVFrame frame) {
+                if(fishEyeDevice.isInitedFishDevice()){
+                    Message obtain = new Message();
+                    obtain.what = 100;
+                    obtain.arg1 = width;
+                    obtain.arg2 = height;
+                    obtain.obj = frame;
+                    safeHandler.sendMessage(obtain);//initOpenGL();
+                }
+            }
+        });
+    }
+
+    private boolean isInitGL = false;
+    private void initOpenGL(int frameWidth,int frameHeight,YUVFrame frame) {
+        if(isInitGL) return;
+        WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        int width = wm.getDefaultDisplay().getWidth();
+        int height = wm.getDefaultDisplay().getHeight();
+
+        glSurfaceView = new GLSurfaceView(this);
+        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width,width);
+        layoutParams.width = width;
+        layoutParams.height = width;
+        glSurfaceView.setLayoutParams(layoutParams);
 
         //opengl
-        glSurfaceView = new GLSurfaceView(this);
         int glVersion = getGLVersion();
         final boolean supportsEs2 =
                 glVersion >= 0x20000
@@ -79,25 +124,20 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
                         || Build.MODEL.contains("Android SDK built for x86")));
         if(supportsEs2){
             glSurfaceView.setEGLContextClientVersion(2);
-            bowlRenderer = new BowlRenderer(this);
+            glSurfaceView.setPreserveEGLContextOnPause(true);
+            bowlRenderer = new BowlRenderer(this, fishEyeDevice, frameWidth,frameHeight,frame);
             glSurfaceView.setRenderer(bowlRenderer);
             rendererSet = true;
+            bowlRenderer.resume();
         } else {
             Toast.makeText(this, "this device does not support OpenGL ES 2.0",
                     Toast.LENGTH_SHORT).show();
             return;
         }
         glSurfaceView.setOnTouchListener(this);
-        setContentView(glSurfaceView);
-
-        //  设备相关部分代码
-        //SDKinitUtil.gClient.addGID("804000ad");
-        SDKinitUtil.gClient.addGID("v3027ee621");
-
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(DeviceStatusManager.DSM_ON_CHANGED_CALL);
-        filter.addAction(DeviceStatusManager.DSM_ON_PUSH_SVRINFO_CALL);
-        registerReceiver(deviceStatusListener,filter);
+        glSurfaceView.setVisibility(View.VISIBLE);
+        root.addView(glSurfaceView);
+        isInitGL = true;
     }
 
 
@@ -114,6 +154,7 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
     @Override
     protected void onResume() {
         super.onResume();
+        Log.w(TAG, "onResume");
         if (rendererSet){
             bowlRenderer.resume();
             glSurfaceView.onResume();
@@ -258,7 +299,7 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
         return (float) Math.sqrt(x * x + y * y);
     }
 
-    private final int DOUBLE_TAP_TIMEOUT = 500;
+    private final int DOUBLE_TAP_TIMEOUT = 300;
     private boolean checkDoubleClick(MotionEvent firstUp, MotionEvent secondUp) {
         long l = secondUp.getEventTime() - firstUp.getEventTime();
         Log.d(TAG,"secondUp.getEventTime() - firstUp.getEventTime() = "+l);
@@ -274,5 +315,27 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
 
 
 
+    static class SafeHandler extends Handler {
+        WeakReference<BowlActivity> mActivity;
 
+        public SafeHandler(BowlActivity activity){
+            mActivity = new WeakReference<BowlActivity>(activity);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case 100:
+                    BowlActivity bowlActivity = mActivity.get();
+
+                    if(bowlActivity!=null){
+                        bowlActivity.initOpenGL(msg.arg1,  msg.arg2, (YUVFrame) msg.obj);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 }

@@ -25,7 +25,8 @@ public class VertexBuffer {
         final int buffers[] = new int[1];
         GLES20.glGenBuffers(buffers.length, buffers, 0);
         if (buffers[0] == 0) {
-            throw new RuntimeException("Could not create a new vertex buffer object");
+            int i = GLES20.glGetError();
+            throw new RuntimeException("Could not create a new vertex buffer object, glGetError : "+i);
         }
         bufferId = buffers[0];
         //bind to the buffer

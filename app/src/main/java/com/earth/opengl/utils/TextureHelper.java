@@ -75,6 +75,7 @@ public class TextureHelper {
         return textureObjectIds[0];
     }
 
+
     public static int[] loadYUVTexture2(int width, int height,
             ByteBuffer yDatabuffer, ByteBuffer uDatabuffer,ByteBuffer vDatabuffer){
         //加载SamplerY
@@ -237,6 +238,8 @@ public class TextureHelper {
         result[2] = _samplerVTexture[0];
         return result;
     }
+
+
     /**
      * 从原生文件加载纹理图片
      * @param context

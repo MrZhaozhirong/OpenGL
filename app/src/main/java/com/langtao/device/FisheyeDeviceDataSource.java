@@ -1,7 +1,6 @@
 package com.langtao.device;
 
 import android.content.Context;
-import android.util.Log;
 import android.widget.Toast;
 
 import java.util.concurrent.LinkedBlockingQueue;
@@ -17,15 +16,19 @@ import glnk.rt.MyRuntime;
  * Created by zzr on 2017/8/3.
  */
 
-public class FisheyeDeviceDataSource implements GlnkDataSourceListener {
+public class FishEyeDeviceDataSource implements GlnkDataSourceListener {
 
     private static final String TAG = "FisheyeDeviceDataSource";
     private LinkedBlockingQueue<YUVFrame> queue = new LinkedBlockingQueue(100);
     private Context context;
 
     private boolean isInitedFishDevice = false;
+    private boolean isInitingFishDevice = false;
     private boolean isCollectYUV = false;
-    public FisheyeDeviceDataSource(Context context){
+
+
+
+    public FishEyeDeviceDataSource(Context context){
         if(this.context == null){
             this.context = context.getApplicationContext();
         }
@@ -41,20 +44,32 @@ public class FisheyeDeviceDataSource implements GlnkDataSourceListener {
 
     public void connect(String gid, String username, String passwd,
                         int channelNo,int streamType,int dataType){
-
+        if(isInitedFishDevice){
+            //已经初始化过了，证明已正常连接，不要再连接了
+            return;
+        }
+        if(isInitingFishDevice){
+            //正在连接，别急
+            return;
+        }
+        isInitingFishDevice = true;
         renderer = new AViewRenderer(context, null);
         renderer.setValidateYUVCallback(new AViewRenderer.ValidateYUVCallback() {
             @Override
             public void yuv_Callback(int width,int height,byte[] byYdata, int nYLen,byte[] byUdata, int nULen,byte[] byVdata, int nVLen) {
 
+                YUVFrame frame = new YUVFrame();
+                frame.setWidth(width);
+                frame.setHeight(height);
+                frame.setYDataBuffer(nYLen, byYdata);
+                frame.setUDataBuffer(nULen, byUdata);
+                frame.setVDataBuffer(nVLen, byVdata);
+
+                if(yuvCallback!=null){
+                    yuvCallback.yuv_callback(width,height,frame);
+                }
+
                 if(isCollectYUV/*filter % 5 == 0*/){
-                    Log.e(TAG, "queue.size : "+queue.size());
-                    YUVFrame frame = new YUVFrame();
-                    frame.setWidth(width);
-                    frame.setHeight(height);
-                    frame.setYDataBuffer(nYLen, byYdata);
-                    frame.setUDataBuffer(nULen, byUdata);
-                    frame.setVDataBuffer(nVLen, byVdata);
                     try {
                         if(queue.size() == 100){
                             YUVFrame obj = queue.poll();
@@ -89,18 +104,12 @@ public class FisheyeDeviceDataSource implements GlnkDataSourceListener {
 
     public void startCollectFrame(){
         isCollectYUV = true;
-        if(player!=null){
-            player.start();
-        }
     }
+
     public void stopCollectFrame(){
         isCollectYUV = false;
-        if(player!=null){
-            player.stop();
-            player.release();
-            player = null;
-        }
     }
+
     public boolean isInitedFishDevice(){
         return isInitedFishDevice;
     }
@@ -150,6 +159,7 @@ public class FisheyeDeviceDataSource implements GlnkDataSourceListener {
 
     @Override
     public void onConnected(int mode, String ip, int port) {
+        isInitingFishDevice = false;
         isInitedFishDevice = true;
     }
 
@@ -170,7 +180,7 @@ public class FisheyeDeviceDataSource implements GlnkDataSourceListener {
 
     @Override
     public void onDisconnected(int i) {
-
+        isInitedFishDevice = false;
     }
 
     @Override
@@ -218,4 +228,13 @@ public class FisheyeDeviceDataSource implements GlnkDataSourceListener {
 
     }
 
+
+    public interface YuvCallback{
+        void yuv_callback(int width,int height,YUVFrame frame);
+    }
+    private YuvCallback yuvCallback;
+
+    public void setYuvCallback(YuvCallback callback) {
+        this.yuvCallback = callback;
+    }
 }

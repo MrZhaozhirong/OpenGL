@@ -212,7 +212,7 @@ public class YUV_ELEMENT_Ball {
     }
 
     private boolean initTexture() {
-        int[] yuvTextureIDs = TextureHelper.loadYUVTexture(context, R.raw.yuv_test_pic, 2048,1024);
+        int[] yuvTextureIDs = TextureHelper.loadYUVTexture(context, R.raw.img_test_pic, 2048,1024);
         if(yuvTextureIDs == null || yuvTextureIDs.length != 3) {
             Log.w(TAG,"yuvTextureIDs object's length not equals 3 !");
             return false;
