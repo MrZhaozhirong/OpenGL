@@ -75,7 +75,6 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
         root = (RelativeLayout) this.findViewById(R.id.root);
 
         //  设备相关部分代码
-        //"804000ad","admin","123456"
         SDKinitUtil.gClient.addGID("v3027ee621");
 
         IntentFilter filter = new IntentFilter();
@@ -99,9 +98,8 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
         });
     }
 
-    private boolean isInitGL = false;
     private void initOpenGL(int frameWidth,int frameHeight,YUVFrame frame) {
-        if(isInitGL) return;
+        if(rendererSet) return;
         WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         int width = wm.getDefaultDisplay().getWidth();
         int height = wm.getDefaultDisplay().getHeight();
@@ -137,7 +135,6 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
         glSurfaceView.setOnTouchListener(this);
         glSurfaceView.setVisibility(View.VISIBLE);
         root.addView(glSurfaceView);
-        isInitGL = true;
     }
 
 
@@ -154,7 +151,6 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.w(TAG, "onResume");
         if (rendererSet){
             bowlRenderer.resume();
             glSurfaceView.onResume();

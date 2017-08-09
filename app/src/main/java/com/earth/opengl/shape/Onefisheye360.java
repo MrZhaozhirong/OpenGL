@@ -80,7 +80,6 @@ public class Onefisheye360 {
     public void initFishEye360Param(int width, int height, YUVFrame frame){
         if(frame==null) return;
         initializing = true;
-        Log.w(TAG, "initFishEye360Param width:"+width+"   height:"+height);
         createBufferData( width, height, frame);
         buildProgram();
         initTexture();
