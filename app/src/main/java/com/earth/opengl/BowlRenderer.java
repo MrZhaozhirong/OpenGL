@@ -7,7 +7,7 @@ import android.opengl.Matrix;
 import android.util.Log;
 
 import com.earth.opengl.shape.Onefisheye360;
-import com.earth.opengl.utils.BowlViewport;
+import com.earth.opengl.utils.CameraViewport;
 import com.earth.opengl.utils.LoggerConfig;
 import com.earth.opengl.utils.MatrixHelper;
 import com.langtao.device.FishEyeDeviceDataSource;
@@ -31,6 +31,9 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     public final static float ENDOSCOPE_SCALE_MIN_VALUE =0.0f;
     public final static double overture = 45;
 
+    public static int MODE_OVER_LOOK = 0;
+    public static int MODE_ENDOSCOPE = 1;
+
     private Context context;
     private boolean isNeedAutoScroll = false;
     private boolean operating = false;
@@ -39,12 +42,12 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     private YUVFrame initFrame;
     public Onefisheye360 bowl;
     public FishEyeDeviceDataSource fishEyeDevice;
-    public BowlViewport eye;
+    public CameraViewport eye;
 
     public BowlRenderer(Context context,FishEyeDeviceDataSource fishEyeDevice,
                         int frameWidth,int frameHeight,YUVFrame frame) {
         this.context = context;
-        eye = new BowlViewport();
+        eye = new CameraViewport();
         this.fishEyeDevice = fishEyeDevice;
         timer = new Timer();
         timer.schedule(autoScrollTimerTask, 5000, 10000);
@@ -127,7 +130,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
 
     //---------------------各种操作-------------------------------------------------
     //双击屏幕 切换视角
-    public int currentPerspectiveMode = BowlViewport.MODE_OVER_LOOK;
+    public int currentPerspectiveMode = MODE_OVER_LOOK;
     void handleDoubleClick(){
         if(bowl==null) return;
         //把放大缩小还原
@@ -140,9 +143,9 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
                 while(transforming){
                     try {
                         Thread.sleep(10);
-                        if(currentPerspectiveMode == BowlViewport.MODE_OVER_LOOK){
+                        if(currentPerspectiveMode == MODE_OVER_LOOK){
                             transforming = transformToEndoscope();
-                        }else if(currentPerspectiveMode == BowlViewport.MODE_ENDOSCOPE){
+                        }else if(currentPerspectiveMode == MODE_ENDOSCOPE){
                             transforming = transformToOverlook();
                         }
                         isNeedAutoScroll = false;
@@ -158,8 +161,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
                 Log.w(TAG,"mfingerRotationX : "+bowl.mfingerRotationX);
 
                 currentPerspectiveMode =
-                        (currentPerspectiveMode == BowlViewport.MODE_OVER_LOOK?
-                                BowlViewport.MODE_ENDOSCOPE:BowlViewport.MODE_OVER_LOOK);
+                        (currentPerspectiveMode == MODE_OVER_LOOK?MODE_ENDOSCOPE:MODE_OVER_LOOK);
                 operating = false;
             }
         }).start();
@@ -318,14 +320,14 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
             float offsetY = bowl.mLastY - y;
             bowl.mfingerRotationX -= offsetX/10;
             bowl.mfingerRotationY -= offsetY/10;
-            if(currentPerspectiveMode == BowlViewport.MODE_ENDOSCOPE){
+            if(currentPerspectiveMode == MODE_ENDOSCOPE){
                 if(bowl.mfingerRotationY > 70){
                     bowl.mfingerRotationY = 70;
                 }
                 if(bowl.mfingerRotationY < 30){
                     bowl.mfingerRotationY = 30;
                 }
-            }else{  //currentPerspectiveMode == BowlViewport.MODE_OVER_LOOK
+            }else{  //currentPerspectiveMode == CameraViewport.MODE_OVER_LOOK
                 if(bowl.mfingerRotationY > 20f){
                     bowl.mfingerRotationY = 20f;
                 }
@@ -385,7 +387,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
             bowl.zoomTimes += 0.1;
         }
 
-        if(currentPerspectiveMode == BowlViewport.MODE_OVER_LOOK){
+        if(currentPerspectiveMode == MODE_OVER_LOOK){
             if(bowl.zoomTimes > OVERLOOK_SCALE_MAX_VALUE) {
                 scale = 0.0f;
                 bowl.zoomTimes = OVERLOOK_SCALE_MAX_VALUE;
@@ -397,7 +399,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
             }
         }
 
-        if(currentPerspectiveMode == BowlViewport.MODE_OVER_LOOK){
+        if(currentPerspectiveMode == MODE_OVER_LOOK){
             if(bowl.zoomTimes < OVERLOOK_SCALE_MIN_VALUE) {
                 scale = 0.0f;
                 bowl.zoomTimes = OVERLOOK_SCALE_MIN_VALUE;
