@@ -79,8 +79,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
         // 调用此方法计算产生透视投影矩阵
         //MatrixHelper.setProjectFrustum(-ratio,ratio, -1, 1, 0.1f, 400f);
         MatrixHelper.perspectiveM(MatrixHelper.mProjectionMatrix,
-                (float) overture,
-                (float)width/(float)height, 0.1f, 100f);
+                (float) overture, ratio, 0.1f, 100f);
         // 调用此方法产生摄像机9参数位置矩阵
         MatrixHelper.setCamera(0, 0, -3f, //摄像机位置
                                 0f, 0f, 0.0f, //摄像机目标视点
@@ -241,7 +240,21 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
             bowl.mLastX = 0;
             bowl.mLastY = 0;
             bowl.gestureInertia_isStop = false;
+
+            if(bowl.mfingerRotationY > 35f){
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            endoscopeBoundaryInertia(x,y, xVelocity, yVelocity);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+            }
         }
+
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -252,19 +265,6 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
                 }
             }
         }).start();
-
-        if(bowl.mfingerRotationY > 35f){
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        endoscopeBoundaryInertia(x,y, xVelocity, yVelocity);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }).start();
-        }
     }
 
     private void endoscopeBoundaryInertia(float x, float y, float xVelocity, float yVelocity) throws
@@ -278,7 +278,6 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
                 //----------------------------------------------------------------------------
                 if(bowl.mfingerRotationY < 35f){
                     bowl.pullupInertia_isStop = true;
-                    operating = false;
                     bowl.mfingerRotationY = 35f;
                 }
                 Thread.sleep(5);
@@ -293,16 +292,18 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
             bowl.gestureInertia_isStop = false;
             float mXVelocity = xVelocity;
             float mYVelocity = yVelocity;
+            Log.w(TAG,"xVelocity : "+xVelocity);
+            if(mXVelocity > 1000f) mXVelocity = 1000f;
+            if(mXVelocity < -1000f) mXVelocity = -1000f;
             while(!bowl.gestureInertia_isStop){
-                float offsetX = -mXVelocity / 500;
+                float offsetX = -mXVelocity / 200;
 
                 bowl.mfingerRotationX -= offsetX;
 
                 //----------------------------------------------------------------------------
-                if(Math.abs(mXVelocity - 0.99f*mXVelocity) < 0.00001f){
+                if(Math.abs(mXVelocity - 0.99f*mXVelocity) < 0.00000001f){
                     if(bowl.pullupInertia_isStop){
                         bowl.gestureInertia_isStop = true;
-                        operating = false;
                     }
                 }
                 mYVelocity = 0.99f*mYVelocity;
@@ -348,12 +349,14 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     TimerTask autoScrollTimerTask = new TimerTask(){
         @Override
         public void run() {
-            if(!operating) isNeedAutoScroll = true;
+            isNeedAutoScroll = true;
+            operating = false;
         }
     };
     void autoRotated(){
         if(bowl==null) return;
-        bowl.mfingerRotationX -= 0.1f;
+        if(operating) return;
+        bowl.mfingerRotationX -= 0.2f;
         if(bowl.mfingerRotationX > 360 || bowl.mfingerRotationX < -360){
             bowl.mfingerRotationX = bowl.mfingerRotationX % 360;
         }
