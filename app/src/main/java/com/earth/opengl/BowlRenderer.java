@@ -35,8 +35,8 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     public static int MODE_ENDOSCOPE = 1;
 
     private Context context;
-    private boolean isNeedAutoScroll = false;
-    private boolean operating = false;
+    private volatile boolean isNeedAutoScroll = false;
+    private volatile boolean operating = false;
     private int frameWidth;
     private int frameHeight;
     private YUVFrame initFrame;
@@ -141,14 +141,14 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
                 boolean transforming = true;
                 while(transforming){
                     try {
-                        Thread.sleep(10);
+                        Thread.sleep(1);
                         if(currentPerspectiveMode == MODE_OVER_LOOK){
                             transforming = transformToEndoscope();
                         }else if(currentPerspectiveMode == MODE_ENDOSCOPE){
                             transforming = transformToOverlook();
                         }
                         isNeedAutoScroll = false;
-                    } catch (InterruptedException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -169,7 +169,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     private boolean transformToOverlook() {
         boolean viewTransforming = true;
         if(eye.cz > -3.0000019f){
-            MatrixHelper.setCamera(eye.cx, eye.cy, eye.cz-=0.02f,
+            MatrixHelper.setCamera(eye.cx, eye.cy, eye.cz-=0.001f,
                     eye.tx, eye.ty, eye.tz,
                     eye.upx, eye.upy, eye.upz);
         }else {
@@ -178,12 +178,12 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
 
         boolean modelTransforming = true;
         if(bowl.mfingerRotationY > 0){
-            bowl.mfingerRotationY -= 0.5f;
+            bowl.mfingerRotationY -= 0.02f;
         }else{
             modelTransforming = false;
         }
 
-        bowl.mfingerRotationX -= 1.5f;
+        bowl.mfingerRotationX -= 0.05f;
 
         if(viewTransforming || modelTransforming){
             return true;
@@ -195,7 +195,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     private boolean transformToEndoscope() {
         boolean viewTransforming = true;
         if(eye.cz < -1.0000019f){
-            MatrixHelper.setCamera(eye.cx, eye.cy, eye.cz+=0.02f,
+            MatrixHelper.setCamera(eye.cx, eye.cy, eye.cz+=0.001f,
                     eye.tx, eye.ty, eye.tz,
                     eye.upx, eye.upy, eye.upz);
         }else{
@@ -204,12 +204,12 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
 
         boolean modelTransforming = true;
         if(bowl.mfingerRotationY < 35f){
-            bowl.mfingerRotationY += 0.5f;
-        }else{
+            bowl.mfingerRotationY += 0.02f;
+        } else {
             modelTransforming = false;
         }
 
-        bowl.mfingerRotationX -= 1.5f;
+        bowl.mfingerRotationX -= 0.05f;
 
         if(viewTransforming || modelTransforming){
             return true;
@@ -265,6 +265,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
                 }
             }
         }).start();
+
     }
 
     private void endoscopeBoundaryInertia(float x, float y, float xVelocity, float yVelocity) throws
@@ -288,27 +289,26 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     private void handleGestureInertia(float x, float y, float xVelocity, float yVelocity)
             throws InterruptedException {
         if(bowl != null ){
-            operating = true;
             bowl.gestureInertia_isStop = false;
-            float mXVelocity = xVelocity;
-            float mYVelocity = yVelocity;
+            float mXVelocity = xVelocity/8000f;
+            float mYVelocity = yVelocity/8000f;
             Log.w(TAG,"xVelocity : "+xVelocity);
-            if(mXVelocity > 1000f) mXVelocity = 1000f;
-            if(mXVelocity < -1000f) mXVelocity = -1000f;
             while(!bowl.gestureInertia_isStop){
-                float offsetX = -mXVelocity / 200;
+                double offsetX = -mXVelocity;
 
                 bowl.mfingerRotationX -= offsetX;
 
                 //----------------------------------------------------------------------------
-                if(Math.abs(mXVelocity - 0.99f*mXVelocity) < 0.00000001f){
+                if(Math.abs(mXVelocity - 0.995f*mXVelocity) < 0.00000001f){
                     if(bowl.pullupInertia_isStop){
                         bowl.gestureInertia_isStop = true;
                     }
                 }
-                mYVelocity = 0.99f*mYVelocity;
-                mXVelocity = 0.99f*mXVelocity;
-                Thread.sleep(5);
+                mYVelocity = 0.995f*mYVelocity;
+                mXVelocity = 0.995f*mXVelocity;
+                Log.i(TAG,"mXVelocity : "+mXVelocity);
+                Thread.sleep(2);
+                operating = true;
             }
         }
     }
@@ -416,6 +416,8 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
         //Matrix.setIdentityM(MatrixHelper.mViewMatrix, 0);
         //在原本的基础上添加增值，不需要置零
         Matrix.translateM(MatrixHelper.mViewMatrix,0, 0f,0f,-scale);
+
+        eye.setCameraVector(eye.cx,eye.cy,MatrixHelper.mViewMatrix[14]);
     }
 
 }
