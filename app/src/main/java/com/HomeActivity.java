@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
 import com.earth.opengl.BowlActivity;
+import com.earth.opengl.CurvedPlateActivity;
 import com.earth.opengl.EarthActivity;
 import com.particles.opengl.ParticlesActivity;
 import com.pixel.opengl.OpenGLActivity;
@@ -47,6 +48,7 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
                 startActivity(new Intent(HomeActivity.this,BowlActivity.class));
                 break;
             case R.id.fish_eye_180:
+                startActivity(new Intent(HomeActivity.this,CurvedPlateActivity.class));
                 break;
         }
     }

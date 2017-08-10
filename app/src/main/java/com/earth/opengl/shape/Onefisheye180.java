@@ -9,12 +9,13 @@ import com.earth.opengl.data.VertexBuffer;
 import com.earth.opengl.program.OneFishEye180ShaderProgram;
 import com.earth.opengl.utils.MatrixHelper;
 import com.earth.opengl.utils.TextureHelper;
+import com.langtao.device.YUVFrame;
 import com.langtao.fisheye.FishEyeProc;
 import com.langtao.fisheye.OneFisheye180Param;
 import com.langtao.fisheye.OneFisheyeOut;
 import com.pixel.opengl.R;
 
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 
 /**
@@ -35,17 +36,12 @@ public class Onefisheye180 {
     public float mLastY;
     public float mfingerRotationX = 0;
     public float mfingerRotationY = 0;
+    public float mfingerRotationZ = 0;
     public float[] mMatrixFingerRotationX = new float[16];
     public float[] mMatrixFingerRotationY = new float[16];
-    public final static float SCALE_MAX_VALUE=1.0f;
-    public final static float SCALE_MIN_VALUE=-1.0f;
-    public final static double overture = 45;
+    public float[] mMatrixFingerRotationZ = new float[16];
     public float zoomTimes = 0.0f;
-    //** 惯性自滚标志
-    public boolean gestureInertia_isStop = true;
-    //** 纵角度限制相关
-    public BallRollBoundaryDirection boundaryDirection = BallRollBoundaryDirection.NORMAL;
-    public double moving_count_auto_return = 0.0f;
+    public boolean isAutoCruise = true;
     //*****************************************************************
     private final Context context;
     private int numElements = 0;// 记录要画多少个三角形
@@ -60,28 +56,43 @@ public class Onefisheye180 {
     private VertexBuffer verticesBuffer;
     private VertexBuffer texCoordsBuffer;
     private IndexBuffer indicesBuffer;
+    private int mFrameWidth;
+    private int mFrameHeight;
+    private YUVFrame initFrame;
+    private int[] _yuvTextureIDs;
+    //***************************************************************
+    public volatile boolean isInitialized = false;
+    public volatile boolean initializing = false;
 
-    public Onefisheye180(Context context){
+    public Onefisheye180(Context context,int frameWidth,int frameHeight,YUVFrame frame){
         this.context = context;
-
-        createBufferData();
-
-        buildProgram();
-
-        initTexture();
-
-        setAttributeStatus();
+        this.mFrameWidth = frameWidth;
+        this.mFrameHeight = frameHeight;
+        this.initFrame = frame;
+        initCurvedPlate180Param(frameWidth,frameHeight,frame);
     }
 
-    private void createBufferData() {
+    public void initCurvedPlate180Param(int width, int height, YUVFrame frame){
+        if(frame==null) return;
+        initializing = true;
+        createBufferData(width,height,frame);
+        buildProgram();
+        initTexture();
+        setAttributeStatus();
+        isInitialized = true;
+        initializing = false;
+    }
+
+
+    private void createBufferData(int width,int height,YUVFrame frame) {
         if(out == null){
             try{
-                InputStream is = context.getResources().openRawResource(R.raw.img_20170725_forward);
-                byte[] dataArray = new byte[is.available()];
-                is.read(dataArray);
-
+                //InputStream is = context.getResources().openRawResource(R.raw.img_20170725_forward);
+                //byte[] dataArray = new byte[is.available()];
+                //is.read(dataArray);
                 outParam = new OneFisheye180Param();
-                int ret = FishEyeProc.getOneFisheye180Param(dataArray, 1280, 720, outParam);
+                //int ret = FishEyeProc.getOneFisheye180Param(dataArray, 1280, 720, outParam);
+                int ret = FishEyeProc.getOneFisheye180Param(frame.getYuvbyte(), width, height, outParam);
                 if (ret != 0) {
                     return;
                 }
@@ -121,7 +132,9 @@ public class Onefisheye180 {
 
 
     private boolean initTexture() {
-        int[] yuvTextureIDs = TextureHelper.loadYUVTexture(context, R.raw.img_20170725_forward, 1280, 720);
+        //int[] yuvTextureIDs = TextureHelper.loadYUVTexture(context, R.raw.img_20170725_forward, 1280, 720);
+        int[] yuvTextureIDs = TextureHelper.loadYUVTexture2(mFrameWidth, mFrameHeight,
+                initFrame.getYDatabuffer(),initFrame.getUDatabuffer(),initFrame.getVDatabuffer());
         if(yuvTextureIDs == null || yuvTextureIDs.length != 3) {
             Log.w(TAG,"yuvTextureIDs object's length not equals 3 !");
             return false;
@@ -137,8 +150,46 @@ public class Onefisheye180 {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[2]);
         GLES20.glUniform1i(fishShader.getuLocationSamplerV(), 2); // => GLES20.GL_TEXTURE2
+
+        _yuvTextureIDs = yuvTextureIDs;
         return true;
     }
+
+    public boolean updateTexture(YUVFrame yuvFrame ){
+        if(yuvFrame==null) return false;
+        int width = yuvFrame.getWidth();
+        int height = yuvFrame.getHeight();
+        ByteBuffer yDatabuffer = yuvFrame.getYDatabuffer();
+        ByteBuffer uDatabuffer = yuvFrame.getUDatabuffer();
+        ByteBuffer vDatabuffer = yuvFrame.getVDatabuffer();
+
+        {
+            //先去掉旧的纹理
+            GLES20.glDeleteTextures(_yuvTextureIDs.length, _yuvTextureIDs, 0);
+            //重新加载数据
+            int[] yuvTextureIDs = TextureHelper.loadYUVTexture2(width, height,
+                    yDatabuffer, uDatabuffer, vDatabuffer);
+            //重新加载纹理
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[0]);
+            GLES20.glUniform1i(fishShader.getuLocationSamplerY(), 0); // => GLES20.GL_TEXTURE0
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[1]);
+            GLES20.glUniform1i(fishShader.getuLocationSamplerU(), 1); // => GLES20.GL_TEXTURE1
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[2]);
+            GLES20.glUniform1i(fishShader.getuLocationSamplerV(), 2); // => GLES20.GL_TEXTURE2
+            _yuvTextureIDs = yuvTextureIDs;
+            mFrameWidth = width;
+            mFrameHeight = height;
+        }
+
+        return true;
+    }
+
+
+
+
 
     private float kColorConversion420[] = {
         1.0f, 1.0f, 1.0f,
