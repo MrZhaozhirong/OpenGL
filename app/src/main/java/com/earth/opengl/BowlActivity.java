@@ -86,7 +86,7 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
         fishEyeDevice.setYuvCallback(new FishEyeDeviceDataSource.YuvCallback() {
             @Override
             public void yuv_callback(int width, int height, YUVFrame frame) {
-                if(fishEyeDevice.isInitedFishDevice()){
+                if(!rendererSet){
                     Message obtain = new Message();
                     obtain.what = 100;
                     obtain.arg1 = width;
