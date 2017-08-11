@@ -12,6 +12,7 @@ import com.earth.opengl.EarthActivity;
 import com.particles.opengl.ParticlesActivity;
 import com.pixel.opengl.OpenGLActivity;
 import com.pixel.opengl.R;
+import com.split.screen.SplitScreenActivity;
 
 /**
  * Created by zzr on 2017/3/4.
@@ -30,6 +31,8 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.panorama).setOnClickListener(this);
         findViewById(R.id.fish_eye_180).setOnClickListener(this);
         findViewById(R.id.fish_eye_360).setOnClickListener(this);
+
+        findViewById(R.id.split).setOnClickListener(this);
     }
 
     @Override
@@ -49,6 +52,9 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.fish_eye_180:
                 startActivity(new Intent(HomeActivity.this,CurvedPlateActivity.class));
+                break;
+            case R.id.split:
+                startActivity(new Intent(HomeActivity.this,SplitScreenActivity.class));
                 break;
         }
     }
