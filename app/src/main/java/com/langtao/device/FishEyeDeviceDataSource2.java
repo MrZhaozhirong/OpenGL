@@ -26,8 +26,6 @@ public class FishEyeDeviceDataSource2 implements GlnkDataSourceListener {
     private boolean isInitingFishDevice = false;
     private boolean isCollectYUV = false;
 
-    public volatile static YUVFrame current_yuv_frame;
-
     public FishEyeDeviceDataSource2(Context context){
         if(this.context == null){
             this.context = context.getApplicationContext();
@@ -92,38 +90,15 @@ public class FishEyeDeviceDataSource2 implements GlnkDataSourceListener {
         player.setDataSource(source);
         player.setDisplay(renderer);
         player.start();
-
-        new ConsumeThread().start();
     }
-
-    public class ConsumeThread extends Thread{
-        @Override
-        public void run() {
-            super.run();
-
-            while(true){
-                try {
-                    if(queue!=null && !queue.isEmpty()){
-                        YUVFrame poll = queue.poll();
-                        if(poll!=null){
-                            current_yuv_frame = poll;
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
 
 
 
     public YUVFrame getYUVFrame(){
-        //if(queue!=null && !queue.isEmpty()){
-        //    return queue.poll();
-        //}
-        return current_yuv_frame;
+        if(queue!=null && !queue.isEmpty()){
+            return queue.poll();
+        }
+        return null;
     }
 
     public void startCollectFrame(){

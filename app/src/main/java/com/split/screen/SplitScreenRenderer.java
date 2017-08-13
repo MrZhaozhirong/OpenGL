@@ -85,7 +85,7 @@ public class SplitScreenRenderer implements GLSurfaceView.Renderer {
         YUVFrame yuvFrame = fishEyeDevice.getYUVFrame();
         if(yuvFrame==null) return;
         if(bowl.updateTexture(yuvFrame)){
-            //yuvFrame.release();
+            yuvFrame.release();
         }
     }
 

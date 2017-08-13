@@ -116,6 +116,7 @@ public class SplitScreenActivity extends Activity implements View.OnTouchListene
         });
     }
 
+    private LinearLayout root_layout;
     private RelativeLayout layout1;
     private RelativeLayout layout2;
     private RelativeLayout layout3;
@@ -125,6 +126,7 @@ public class SplitScreenActivity extends Activity implements View.OnTouchListene
     private GLSurfaceView glSurfaceView2;
     private SplitScreenRenderer renderer2;
     private void initView() {
+        root_layout = (LinearLayout) this.findViewById(R.id.root_layout);
         layout1 = (RelativeLayout) this.findViewById(R.id.layout1);
         layout2 = (RelativeLayout) this.findViewById(R.id.layout2);
         layout3 = (RelativeLayout) this.findViewById(R.id.layout3);
@@ -151,31 +153,11 @@ public class SplitScreenActivity extends Activity implements View.OnTouchListene
                     Toast.LENGTH_SHORT).show();
             return;
         }
-        RelativeLayout.LayoutParams glLayoutParams = new RelativeLayout.LayoutParams(width/2-1,width/2-1);
+        RelativeLayout.LayoutParams glLayoutParams = new RelativeLayout.LayoutParams(width,width);
         glSurfaceView1.setLayoutParams(glLayoutParams);
         glSurfaceView1.setVisibility(View.VISIBLE);
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(width/2,width/2);
-        layout1.setLayoutParams(layoutParams);
-        layout1.addView(glSurfaceView1);
         //**********************************************************************
-        glSurfaceView2 = new GLSurfaceView(this);
-        if(checkGLEnvironment()){
-            glSurfaceView2.setEGLContextClientVersion(2);
-            glSurfaceView2.setPreserveEGLContextOnPause(true);
-            renderer2 = new SplitScreenRenderer(this, revisionFishEyeDevice, frameWidth,frameHeight,frame);
-            glSurfaceView2.setRenderer(renderer2);
-        } else {
-            Toast.makeText(this, "this device does not support OpenGL ES 2.0",
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
-        RelativeLayout.LayoutParams glLayoutParams2 = new RelativeLayout.LayoutParams(width/2-1,width/2-1);
-        glSurfaceView2.setLayoutParams(glLayoutParams2);
-        glSurfaceView2.setVisibility(View.VISIBLE);
-        LinearLayout.LayoutParams layoutParams2 = new LinearLayout.LayoutParams(width/2,width/2);
-        layout2.setLayoutParams(layoutParams2);
-        layout2.addView(glSurfaceView2);
-
+        root_layout.addView(glSurfaceView1);
         rendererSet = true;
     }
 
