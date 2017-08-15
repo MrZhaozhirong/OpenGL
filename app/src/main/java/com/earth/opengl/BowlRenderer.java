@@ -127,6 +127,12 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
 
 
 
+    public void resume(){
+        fishEyeDevice.startCollectFrame();
+    }
+    public void pause(){
+        fishEyeDevice.stopCollectFrame();
+    }
     //---------------------各种操作-------------------------------------------------
     //双击屏幕 切换视角
     public int currentPerspectiveMode = MODE_OVER_LOOK;
@@ -361,21 +367,6 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
             bowl.mfingerRotationX = bowl.mfingerRotationX % 360;
         }
     }
-
-
-    public void resume(){
-        fishEyeDevice.startCollectFrame();
-    }
-    public void pause(){
-        fishEyeDevice.stopCollectFrame();
-    }
-
-
-
-
-
-
-
 
     //双指操作
     void handleMultiTouch(float distance){
