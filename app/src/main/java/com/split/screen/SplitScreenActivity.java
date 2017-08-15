@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -34,7 +35,7 @@ import static com.langtao.device.DeviceStatusManager.DEV_ID;
  * Created by zzr on 2017/8/10.
  */
 
-public class SplitScreenActivity extends Activity implements View.OnTouchListener {
+public class SplitScreenActivity extends Activity  {
 
 
     private SafeHandler safeHandler = new SafeHandler(this);
@@ -48,12 +49,11 @@ public class SplitScreenActivity extends Activity implements View.OnTouchListene
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
+            SplitScreenActivity activity = mActivity.get();
             switch (msg.what) {
-                case 100:
-                    SplitScreenActivity activity = mActivity.get();
-
+                case 101:
                     if(activity!=null){
-                        activity.initOpenGLs(msg.arg1,  msg.arg2, (YUVFrame) msg.obj);
+                        activity.initOpenGL();
                     }
                     break;
                 default:
@@ -105,12 +105,7 @@ public class SplitScreenActivity extends Activity implements View.OnTouchListene
             @Override
             public void yuv_callback(int width, int height, YUVFrame frame) {
                 if(!rendererSet){
-                    Message obtain = new Message();
-                    obtain.what = 100;
-                    obtain.arg1 = width;
-                    obtain.arg2 = height;
-                    obtain.obj = frame;
-                    safeHandler.sendMessage(obtain);//initOpenGL();
+                    safeHandler.sendEmptyMessage(101);
                 }
             }
         });
@@ -121,10 +116,8 @@ public class SplitScreenActivity extends Activity implements View.OnTouchListene
     private RelativeLayout layout2;
     private RelativeLayout layout3;
     private RelativeLayout layout4;
-    private GLSurfaceView glSurfaceView1;
-    private SplitScreenRenderer renderer1;
-    private GLSurfaceView glSurfaceView2;
-    private SplitScreenRenderer renderer2;
+    private GLSurfaceView glSurfaceView;
+    private SplitScreenRenderer renderer;
     private void initView() {
         root_layout = (LinearLayout) this.findViewById(R.id.root_layout);
         layout1 = (RelativeLayout) this.findViewById(R.id.layout1);
@@ -135,29 +128,30 @@ public class SplitScreenActivity extends Activity implements View.OnTouchListene
 
 
     private boolean rendererSet = false;
-    private void initOpenGLs(int frameWidth,int frameHeight,YUVFrame frame) {
+    private void initOpenGL(){
         if(rendererSet) return;
         WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         int width = wm.getDefaultDisplay().getWidth();
         int height = wm.getDefaultDisplay().getHeight();
         //**********************************************************************
-        glSurfaceView1 = new GLSurfaceView(this);
+        glSurfaceView = new GLSurfaceView(this);
         if(checkGLEnvironment()){
-            glSurfaceView1.setEGLContextClientVersion(2);
-            glSurfaceView1.setPreserveEGLContextOnPause(true);
-            renderer1 = new SplitScreenRenderer(this, revisionFishEyeDevice, frameWidth,frameHeight,frame);
-            renderer1.resume();
-            glSurfaceView1.setRenderer(renderer1);
+            glSurfaceView.setEGLContextClientVersion(2);
+            glSurfaceView.setPreserveEGLContextOnPause(true);
+            renderer = new SplitScreenRenderer(this, revisionFishEyeDevice);
+            glSurfaceView.setRenderer(renderer);
+            revisionFishEyeDevice.startCollectFrame();
         } else {
             Toast.makeText(this, "this device does not support OpenGL ES 2.0",
                     Toast.LENGTH_SHORT).show();
             return;
         }
         RelativeLayout.LayoutParams glLayoutParams = new RelativeLayout.LayoutParams(width,width);
-        glSurfaceView1.setLayoutParams(glLayoutParams);
-        glSurfaceView1.setVisibility(View.VISIBLE);
+        glSurfaceView.setLayoutParams(glLayoutParams);
+        glSurfaceView.setVisibility(View.VISIBLE);
+        glSurfaceView.setOnTouchListener(new GLViewTouchListener());
         //**********************************************************************
-        root_layout.addView(glSurfaceView1);
+        root_layout.addView(glSurfaceView);
         rendererSet = true;
     }
 
@@ -178,20 +172,90 @@ public class SplitScreenActivity extends Activity implements View.OnTouchListene
         return supportsEs2;
     }
 
+    private class GLViewTouchListener implements View.OnTouchListener{
+        private float oldDist;
+        private int mode = 0;
+        private VelocityTracker mVelocityTracker = null;
 
-    @Override
-    public boolean onTouch(View view, MotionEvent motionEvent) {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            // -------------判断多少个触碰点---------------------------------
+            switch (event.getAction() & MotionEvent.ACTION_MASK){
+                case MotionEvent.ACTION_DOWN:
+                    mode = 1;
+                    break;
+                case MotionEvent.ACTION_UP:
+                    mode = 0;
+                    break;
+                case MotionEvent.ACTION_POINTER_UP:
+                    mode = 0;
+                    break;
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    oldDist = spacing(event);
+                    mode = 2;
+                    break;
+            }
+            if(event.getAction() == MotionEvent.ACTION_DOWN){
+                if (mode == 1) {
+                    final float x = event.getX();
+                    final float y = event.getY();
+                    glSurfaceView.queueEvent(new Runnable() {
+                        @Override
+                        public void run() {
+                            renderer.handleTouchDown(x, y);
+                        }
+                    });
 
-        return false;
+                    if (mVelocityTracker == null) {
+                        mVelocityTracker = VelocityTracker.obtain();
+                    } else {
+                        mVelocityTracker.clear();
+                    }
+                    mVelocityTracker.addMovement(event);
+                }
+            }
+            else if(event.getAction() == MotionEvent.ACTION_UP){
+                final float x = event.getX();
+                final float y = event.getY();
+                final float xVelocity = mVelocityTracker.getXVelocity();
+                final float yVelocity = mVelocityTracker.getYVelocity();
+                glSurfaceView.queueEvent(new Runnable() {
+                    @Override
+                    public void run() {
+                        renderer.handleTouchUp(x, y, xVelocity, yVelocity);
+                    }
+                });
+            }
+            else if(event.getAction() ==MotionEvent.ACTION_MOVE){
+                if(mode == 1){
+                    final float x = event.getX();
+                    final float y = event.getY();
+                    glSurfaceView.queueEvent(new Runnable() {
+                        @Override
+                        public void run() {
+                            renderer.handleTouchMove(x,y);
+                        }
+                    });
+
+                    mVelocityTracker.addMovement(event);
+                    mVelocityTracker.computeCurrentVelocity(1000);
+                }
+            }
+            return true;
+        }
+    }
+
+    private float spacing(MotionEvent event) {
+        float x = event.getX(0) - event.getX(1);
+        float y = event.getY(0) - event.getY(1);
+        return (float) Math.sqrt(x * x + y * y);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         if (rendererSet){
-            glSurfaceView1.onResume();
-            //renderer2.resume();
-            //glSurfaceView2.onResume();
+            glSurfaceView.onResume();
         }
     }
 
@@ -199,10 +263,8 @@ public class SplitScreenActivity extends Activity implements View.OnTouchListene
     protected void onPause() {
         super.onPause();
         if(rendererSet){
-            renderer1.pause();
-            glSurfaceView1.onPause();
-            //renderer2.pause();
-            //glSurfaceView2.onPause();
+            revisionFishEyeDevice.stopCollectFrame();
+            glSurfaceView.onPause();
         }
     }
 
