@@ -62,9 +62,11 @@ public class FourEye360 {
     private final Context context;
     private int screenWidth;
     private int screenHeight;
+    private int mFrameWidth;
+    private int mFrameHeight;
     private FishEyeDeviceDataSource2 fishEyeDevice;
     private SplitScreenCanvas splitScreenCanvas;
-    private FrameBuffer fbo;
+
 
 
     public FourEye360(Context context,FishEyeDeviceDataSource2 fishEyeDevice) {
@@ -163,6 +165,8 @@ public class FourEye360 {
         GLES20.glUniform1i(fishShader.getuLocationSamplerV(), 2); // => GLES20.GL_TEXTURE2
 
         _yuvTextureIDs = yuvTextureIDs;
+        mFrameWidth = width;
+        mFrameHeight= height;
         return true;
     }
 
@@ -212,29 +216,39 @@ public class FourEye360 {
         ByteBuffer uDatabuffer = yuvFrame.getUDatabuffer();
         ByteBuffer vDatabuffer = yuvFrame.getVDatabuffer();
 
+        if(width != mFrameWidth || height!= mFrameHeight)
         {
             //先去掉旧的纹理
             GLES20.glDeleteTextures(_yuvTextureIDs.length, _yuvTextureIDs, 0);
             //重新加载数据
-            GLES20.glUseProgram( fishShader.getShaderProgramId() );
             int[] yuvTextureIDs = TextureHelper.loadYUVTexture2(width, height,
                     yDatabuffer, uDatabuffer, vDatabuffer);
-            //重新加载纹理
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[0]);
-            GLES20.glUniform1i(fishShader.getuLocationSamplerY(), 0); // => GLES20.GL_TEXTURE0
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[1]);
-            GLES20.glUniform1i(fishShader.getuLocationSamplerU(), 1); // => GLES20.GL_TEXTURE1
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[2]);
-            GLES20.glUniform1i(fishShader.getuLocationSamplerV(), 2); // => GLES20.GL_TEXTURE2
             _yuvTextureIDs = yuvTextureIDs;
+            mFrameWidth = width;
+            mFrameHeight = height;
         }
+        else
+        {//长宽没变，更新纹理，不重建
+            TextureHelper.updateTexture2(_yuvTextureIDs[0], mFrameWidth, mFrameHeight, yDatabuffer);
+            TextureHelper.updateTexture2(_yuvTextureIDs[1], mFrameWidth, mFrameHeight, uDatabuffer);
+            TextureHelper.updateTexture2(_yuvTextureIDs[2], mFrameWidth, mFrameHeight, vDatabuffer);
+        }
+        //重新加载纹理
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _yuvTextureIDs[0]);
+        GLES20.glUniform1i(fishShader.getuLocationSamplerY(), 0); // => GLES20.GL_TEXTURE0
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _yuvTextureIDs[1]);
+        GLES20.glUniform1i(fishShader.getuLocationSamplerU(), 1); // => GLES20.GL_TEXTURE1
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _yuvTextureIDs[2]);
+        GLES20.glUniform1i(fishShader.getuLocationSamplerV(), 2); // => GLES20.GL_TEXTURE2
         return true;
     }
 
-    private void updateBowlMatrix() {
+    private void updateBowlMatrix(float mOffsetFingerRotationX,
+                                  float mOffsetFingerRotationY,
+                                  float mOffsetFingerRotationZ) {
 
         Matrix.setIdentityM(this.mModelMatrix, 0);
         Matrix.scaleM(this.mModelMatrix,0,1.0f,1.0f,1.0f);
@@ -242,8 +256,8 @@ public class FourEye360 {
         Matrix.setIdentityM(this.mMatrixFingerRotationX, 0);
         Matrix.setIdentityM(this.mMatrixFingerRotationY, 0);
         Matrix.setIdentityM(this.mMatrixFingerRotationZ, 0);
-        Matrix.rotateM(this.mMatrixFingerRotationZ, 0, this.mfingerRotationX, 0, 0, 1);
-        Matrix.rotateM(this.mMatrixFingerRotationX, 0, this.mfingerRotationY, 1, 0, 0);
+        Matrix.rotateM(this.mMatrixFingerRotationZ, 0, this.mfingerRotationX+mOffsetFingerRotationX, 0, 0, 1);
+        Matrix.rotateM(this.mMatrixFingerRotationX, 0, this.mfingerRotationY+mOffsetFingerRotationY, 1, 0, 0);
 
         Matrix.multiplyMM(this.mModelMatrix,0, this.mMatrixFingerRotationX,0, this.mMatrixFingerRotationZ,0 );
     }
@@ -252,20 +266,26 @@ public class FourEye360 {
 
 
 
-
+    private FrameBuffer fbo1;
+    private FrameBuffer fbo2;
+    private FrameBuffer fbo3;
+    private FrameBuffer fbo4;
     public void onSurfaceCreate() {
         initFishEye360Param();
         splitScreenCanvas = new SplitScreenCanvas(context);
-        fbo = new FrameBuffer();
-        fbo.setup(screenWidth, screenWidth);
-
+        fbo1 = new FrameBuffer();
+        fbo1.setup(screenWidth, screenWidth);
+        fbo2 = new FrameBuffer();
+        fbo2.setup(screenWidth, screenWidth);
+        fbo3 = new FrameBuffer();
+        fbo3.setup(screenWidth, screenWidth);
+        fbo4 = new FrameBuffer();
+        fbo4.setup(screenWidth, screenWidth);
         timer = new Timer();
         timer.schedule(autoScrollTimerTask, 5000, 10000);
     }
 
     public void onSurfaceChange(float ratio) {
-
-        //每个模型都维护自己的一组mvp数组 防止混乱
         MatrixHelper.perspectiveM(this.mProjectionMatrix,
                 (float) overture, ratio, 0.1f, 100f);
         MatrixHelper.perspectiveM(splitScreenCanvas.mProjectionMatrix,
@@ -282,30 +302,95 @@ public class FourEye360 {
                 0f, 1.0f, 0.0f);//摄像机头顶方向向量
     }
 
+    private boolean actionSwap = true;
     public void onDrawFrame() {
-
-        fbo.begin();
         GLES20.glClear( GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
-        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-        GLES20.glCullFace(GLES20.GL_BACK);
-        GLES20.glEnable(GLES20.GL_CULL_FACE);
-        if(fishEyeDevice.isInitedFishDevice() && this.isInitialized){
-            updateTexture();
-            updateBowlMatrix();
-            if(isNeedAutoScroll){
-                autoRotated();
+        //if(actionSwap)
+        {
+            fbo1.begin();
+            GLES20.glClear( GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
+            GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+            GLES20.glCullFace(GLES20.GL_BACK);
+            GLES20.glEnable(GLES20.GL_CULL_FACE);
+            if(fishEyeDevice.isInitedFishDevice() && this.isInitialized){
+                updateTexture();
+                updateBowlMatrix(0,0,0);
+                if(isNeedAutoScroll){
+                    autoRotated();
+                }
+                this.setAttributeStatus();
+                this.draw();
             }
-            this.setAttributeStatus();
-            this.draw();
-        }
-        fbo.end();
+            fbo1.end();
+            GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+            GLES20.glDisable(GLES20.GL_CULL_FACE);
+            splitScreenCanvas.setShaderAttribute(1);
+            splitScreenCanvas.setDrawTexture(fbo1.getTextureId());
+            splitScreenCanvas.draw();
 
-        GLES20.glClear( GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
-        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-        GLES20.glDisable(GLES20.GL_CULL_FACE);
-        splitScreenCanvas.setShaderAttribute();
-        splitScreenCanvas.setDrawTexture(fbo.getTextureId());
-        splitScreenCanvas.draw();
+            fbo1.begin();
+            GLES20.glClear( GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
+            GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+            GLES20.glCullFace(GLES20.GL_BACK);
+            GLES20.glEnable(GLES20.GL_CULL_FACE);
+            if(fishEyeDevice.isInitedFishDevice() && this.isInitialized){
+                updateTexture();
+                updateBowlMatrix(90f,0,0);
+                if(isNeedAutoScroll){
+                    autoRotated();
+                }
+                this.setAttributeStatus();
+                this.draw();
+            }
+            fbo1.end();
+            GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+            GLES20.glDisable(GLES20.GL_CULL_FACE);
+            splitScreenCanvas.setShaderAttribute(2);
+            splitScreenCanvas.setDrawTexture(fbo1.getTextureId());
+            splitScreenCanvas.draw();
+
+            fbo1.begin();
+            GLES20.glClear( GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
+            GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+            GLES20.glCullFace(GLES20.GL_BACK);
+            GLES20.glEnable(GLES20.GL_CULL_FACE);
+            if(fishEyeDevice.isInitedFishDevice() && this.isInitialized){
+                updateTexture();
+                updateBowlMatrix(180f,0,0);
+                if(isNeedAutoScroll){
+                    autoRotated();
+                }
+                this.setAttributeStatus();
+                this.draw();
+            }
+            fbo1.end();
+            GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+            GLES20.glDisable(GLES20.GL_CULL_FACE);
+            splitScreenCanvas.setShaderAttribute(3);
+            splitScreenCanvas.setDrawTexture(fbo1.getTextureId());
+            splitScreenCanvas.draw();
+
+            fbo1.begin();
+            GLES20.glClear( GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
+            GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+            GLES20.glCullFace(GLES20.GL_BACK);
+            GLES20.glEnable(GLES20.GL_CULL_FACE);
+            if(fishEyeDevice.isInitedFishDevice() && this.isInitialized){
+                updateTexture();
+                updateBowlMatrix(270f,0,0);
+                if(isNeedAutoScroll){
+                    autoRotated();
+                }
+                this.setAttributeStatus();
+                this.draw();
+            }
+            fbo1.end();
+            GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+            GLES20.glDisable(GLES20.GL_CULL_FACE);
+            splitScreenCanvas.setShaderAttribute(4);
+            splitScreenCanvas.setDrawTexture(fbo1.getTextureId());
+            splitScreenCanvas.draw();
+        }
     }
 
 
@@ -405,7 +490,6 @@ public class FourEye360 {
             this.gestureInertia_isStop = false;
             float mXVelocity = xVelocity/8000f;
             float mYVelocity = yVelocity/8000f;
-            Log.w(TAG,"xVelocity : "+xVelocity);
             while(!this.gestureInertia_isStop){
                 double offsetX = -mXVelocity;
 
@@ -419,7 +503,6 @@ public class FourEye360 {
                 }
                 mYVelocity = 0.995f*mYVelocity;
                 mXVelocity = 0.995f*mXVelocity;
-                Log.i(TAG,"mXVelocity : "+mXVelocity);
                 Thread.sleep(2);
                 operating = true;
             }

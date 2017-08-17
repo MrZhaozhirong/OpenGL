@@ -46,7 +46,7 @@ public class FrameBuffer {
         //GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_DEPTH_ATTACHMENT,
         //                                GLES20.GL_RENDERBUFFER, renderBufferId);
 
-        //GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
         return  true;
     }
 
