@@ -165,35 +165,34 @@ public class Onefisheye360 {
         ByteBuffer uDatabuffer = yuvFrame.getUDatabuffer();
         ByteBuffer vDatabuffer = yuvFrame.getVDatabuffer();
 
-        //if(width != mFrameWidth || height!= mFrameHeight)
+        if(width != mFrameWidth || height!= mFrameHeight)
         {
             //先去掉旧的纹理
             GLES20.glDeleteTextures(_yuvTextureIDs.length, _yuvTextureIDs, 0);
             //重新加载数据
             int[] yuvTextureIDs = TextureHelper.loadYUVTexture2(width, height,
                     yDatabuffer, uDatabuffer, vDatabuffer);
-            //重新加载纹理
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[0]);
-            GLES20.glUniform1i(fishShader.getuLocationSamplerY(), 0); // => GLES20.GL_TEXTURE0
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[1]);
-            GLES20.glUniform1i(fishShader.getuLocationSamplerU(), 1); // => GLES20.GL_TEXTURE1
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, yuvTextureIDs[2]);
-            GLES20.glUniform1i(fishShader.getuLocationSamplerV(), 2); // => GLES20.GL_TEXTURE2
             _yuvTextureIDs = yuvTextureIDs;
             mFrameWidth = width;
             mFrameHeight = height;
         }
-//        else
-//        {
-//            //长宽没变，更新纹理，不重建
-//            TextureHelper.updateTexture2(_yuvTextureIDs[0], mFrameWidth, mFrameHeight, yDatabuffer);
-//            TextureHelper.updateTexture2(_yuvTextureIDs[1], mFrameWidth, mFrameHeight, uDatabuffer);
-//            TextureHelper.updateTexture2(_yuvTextureIDs[2], mFrameWidth, mFrameHeight, vDatabuffer);
-//        }
+        else
+        {//长宽没变，更新纹理，不重建
+            TextureHelper.updateTexture2(_yuvTextureIDs[0], mFrameWidth, mFrameHeight, yDatabuffer);
+            TextureHelper.updateTexture2(_yuvTextureIDs[1], mFrameWidth, mFrameHeight, uDatabuffer);
+            TextureHelper.updateTexture2(_yuvTextureIDs[2], mFrameWidth, mFrameHeight, vDatabuffer);
+        }
 
+        //重新加载纹理
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _yuvTextureIDs[0]);
+        GLES20.glUniform1i(fishShader.getuLocationSamplerY(), 0); // => GLES20.GL_TEXTURE0
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _yuvTextureIDs[1]);
+        GLES20.glUniform1i(fishShader.getuLocationSamplerU(), 1); // => GLES20.GL_TEXTURE1
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, _yuvTextureIDs[2]);
+        GLES20.glUniform1i(fishShader.getuLocationSamplerV(), 2); // => GLES20.GL_TEXTURE2
         return true;
     }
 

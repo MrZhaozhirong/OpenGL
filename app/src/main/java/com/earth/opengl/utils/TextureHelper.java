@@ -305,7 +305,7 @@ public class TextureHelper {
     public static void updateTexture2(int textureId, int width, int height,ByteBuffer dataBuffer){
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
         GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D,0,0,0, width,height,
-                GLES20.GL_LUMINANCE,GLES20.GL_UNSIGNED_BYTE, dataBuffer);
+                GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, dataBuffer);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
     }
 

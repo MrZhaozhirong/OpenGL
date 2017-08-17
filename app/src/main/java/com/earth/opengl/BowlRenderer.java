@@ -175,7 +175,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     private boolean transformToOverlook() {
         boolean viewTransforming = true;
         if(eye.cz > -3.0000019f){
-            MatrixHelper.setCamera(eye.cx, eye.cy, eye.cz-=0.001f,
+            MatrixHelper.setCamera(eye.cx, eye.cy, eye.cz-=0.002f,
                     eye.tx, eye.ty, eye.tz,
                     eye.upx, eye.upy, eye.upz);
         }else {
@@ -184,7 +184,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
 
         boolean modelTransforming = true;
         if(bowl.mfingerRotationY > 0){
-            bowl.mfingerRotationY -= 0.02f;
+            bowl.mfingerRotationY -= 0.04f;
         }else{
             modelTransforming = false;
         }
@@ -201,7 +201,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
     private boolean transformToEndoscope() {
         boolean viewTransforming = true;
         if(eye.cz < -1.0000019f){
-            MatrixHelper.setCamera(eye.cx, eye.cy, eye.cz+=0.001f,
+            MatrixHelper.setCamera(eye.cx, eye.cy, eye.cz+=0.002f,
                     eye.tx, eye.ty, eye.tz,
                     eye.upx, eye.upy, eye.upz);
         }else{
@@ -210,7 +210,7 @@ public class BowlRenderer implements GLSurfaceView.Renderer {
 
         boolean modelTransforming = true;
         if(bowl.mfingerRotationY < 35f){
-            bowl.mfingerRotationY += 0.02f;
+            bowl.mfingerRotationY += 0.04f;
         } else {
             modelTransforming = false;
         }

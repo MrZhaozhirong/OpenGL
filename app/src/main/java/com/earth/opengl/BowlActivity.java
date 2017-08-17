@@ -295,7 +295,7 @@ public class BowlActivity extends Activity implements View.OnTouchListener {
         return (float) Math.sqrt(x * x + y * y);
     }
 
-    private final int DOUBLE_TAP_TIMEOUT = 300;
+    private final int DOUBLE_TAP_TIMEOUT = 250;
     private boolean checkDoubleClick(MotionEvent firstUp, MotionEvent secondUp) {
         long l = secondUp.getEventTime() - firstUp.getEventTime();
         Log.d(TAG,"secondUp.getEventTime() - firstUp.getEventTime() = "+l);
