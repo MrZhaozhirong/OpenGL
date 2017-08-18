@@ -5,7 +5,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
 
-import com.langtao.device.FishEyeDeviceDataSource2;
+import com.langtao.device.FishEyeDeviceDataSource;
 import com.split.screen.shape.FourEye360;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -21,11 +21,11 @@ public class SplitScreenRenderer implements GLSurfaceView.Renderer {
     private static final String TAG = "SplitScreenRenderer";
     private Context context;
     public FourEye360 fourEye;
-    public FishEyeDeviceDataSource2 fishEyeDevice;
+    public FishEyeDeviceDataSource fishEyeDevice;
 
 
 
-    public SplitScreenRenderer(Context context, FishEyeDeviceDataSource2 fishEyeDevice) {
+    public SplitScreenRenderer(Context context, FishEyeDeviceDataSource fishEyeDevice) {
         this.context = context;
         this.fishEyeDevice = fishEyeDevice;
 

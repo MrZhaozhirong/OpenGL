@@ -22,7 +22,7 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.langtao.device.DeviceStatusManager;
-import com.langtao.device.FishEyeDeviceDataSource2;
+import com.langtao.device.FishEyeDeviceDataSource;
 import com.langtao.device.SDKinitUtil;
 import com.langtao.device.YUVFrame;
 import com.pixel.opengl.R;
@@ -62,7 +62,7 @@ public class SplitScreenActivity extends Activity  {
         }
     }
 
-    private FishEyeDeviceDataSource2 revisionFishEyeDevice;
+    private FishEyeDeviceDataSource revisionFishEyeDevice;
     private SSDeviceStatusListener ssDeviceStatusListener = new SSDeviceStatusListener();
     public class SSDeviceStatusListener extends BroadcastReceiver {
 
@@ -100,8 +100,8 @@ public class SplitScreenActivity extends Activity  {
         filter.addAction(DeviceStatusManager.DSM_ON_PUSH_SVRINFO_CALL);
         registerReceiver(ssDeviceStatusListener,filter);
 
-        revisionFishEyeDevice = new FishEyeDeviceDataSource2(this);
-        revisionFishEyeDevice.setYuvCallback(new FishEyeDeviceDataSource2.YuvCallback() {
+        revisionFishEyeDevice = new FishEyeDeviceDataSource(this);
+        revisionFishEyeDevice.setYuvCallback(new FishEyeDeviceDataSource.YuvCallback() {
             @Override
             public void yuv_callback(int width, int height, YUVFrame frame) {
                 if(!rendererSet){

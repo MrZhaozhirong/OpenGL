@@ -51,6 +51,9 @@
         <activity android:name="com.earth.opengl.CurvedPlateActivity"
                   android:screenOrientation="portrait"/>
 
+
+        <activity android:name="com.split.screen.SplitScreenActivity"
+                  android:screenOrientation="portrait"/>
     </application>
 
 </manifest>

@@ -25,7 +25,7 @@ public class FishEyeDeviceDataSource implements GlnkDataSourceListener {
     private boolean isInitedFishDevice = false;
     private boolean isInitingFishDevice = false;
     private boolean isCollectYUV = false;
-
+    private YUVFrame init_first_frame;
 
 
     public FishEyeDeviceDataSource(Context context){
@@ -81,6 +81,10 @@ public class FishEyeDeviceDataSource implements GlnkDataSourceListener {
                         e.printStackTrace();
                     }
                 }
+
+                if(init_first_frame == null){
+                    init_first_frame = frame;
+                }
             }
         });
 
@@ -100,6 +104,10 @@ public class FishEyeDeviceDataSource implements GlnkDataSourceListener {
             return queue.poll();
         }
         return null;
+    }
+
+    public YUVFrame getInitFirstFrame() {
+        return init_first_frame;
     }
 
     public void startCollectFrame(){

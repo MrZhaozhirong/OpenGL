@@ -11,7 +11,7 @@ import com.earth.opengl.data.VertexBuffer;
 import com.earth.opengl.program.OneFishEye360ShaderProgram;
 import com.earth.opengl.utils.MatrixHelper;
 import com.earth.opengl.utils.TextureHelper;
-import com.langtao.device.FishEyeDeviceDataSource2;
+import com.langtao.device.FishEyeDeviceDataSource;
 import com.langtao.device.YUVFrame;
 import com.langtao.fisheye.FishEyeProc;
 import com.langtao.fisheye.OneFisheye360Param;
@@ -64,12 +64,12 @@ public class FourEye360 {
     private int screenHeight;
     private int mFrameWidth;
     private int mFrameHeight;
-    private FishEyeDeviceDataSource2 fishEyeDevice;
+    private FishEyeDeviceDataSource fishEyeDevice;
     private SplitScreenCanvas splitScreenCanvas;
 
 
 
-    public FourEye360(Context context,FishEyeDeviceDataSource2 fishEyeDevice) {
+    public FourEye360(Context context,FishEyeDeviceDataSource fishEyeDevice) {
         this.context = context;
         this.fishEyeDevice = fishEyeDevice;
         Matrix.setIdentityM(this.mModelMatrix, 0);
@@ -87,7 +87,7 @@ public class FourEye360 {
     //================================建模视频帧相关==============================================================
 
     private void initFishEye360Param() {
-        YUVFrame frame = fishEyeDevice.getCurrentFrame();
+        YUVFrame frame = fishEyeDevice.getInitFirstFrame();
         if(frame==null) return;
         initializing = true;
         createBufferData( frame.getWidth(), frame.getHeight(), frame);
@@ -267,20 +267,12 @@ public class FourEye360 {
 
 
     private FrameBuffer fbo1;
-    private FrameBuffer fbo2;
-    private FrameBuffer fbo3;
-    private FrameBuffer fbo4;
     public void onSurfaceCreate() {
         initFishEye360Param();
         splitScreenCanvas = new SplitScreenCanvas(context);
         fbo1 = new FrameBuffer();
         fbo1.setup(screenWidth, screenWidth);
-        fbo2 = new FrameBuffer();
-        fbo2.setup(screenWidth, screenWidth);
-        fbo3 = new FrameBuffer();
-        fbo3.setup(screenWidth, screenWidth);
-        fbo4 = new FrameBuffer();
-        fbo4.setup(screenWidth, screenWidth);
+
         timer = new Timer();
         timer.schedule(autoScrollTimerTask, 5000, 10000);
     }
@@ -302,7 +294,7 @@ public class FourEye360 {
                 0f, 1.0f, 0.0f);//摄像机头顶方向向量
     }
 
-    private boolean actionSwap = true;
+
     public void onDrawFrame() {
         GLES20.glClear( GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
         //if(actionSwap)
@@ -397,18 +389,26 @@ public class FourEye360 {
     //================================操作封装==================================================================
     //================================操作封装==================================================================
     //***************************************************************
-    public float mLastX;
-    public float mLastY;
-    public float mfingerRotationX = 0;
-    public float mfingerRotationY = 0;
-    public float mfingerRotationZ = 0;
-    public float[] mMatrixFingerRotationX = new float[16];
-    public float[] mMatrixFingerRotationY = new float[16];
-    public float[] mMatrixFingerRotationZ = new float[16];
-    public volatile boolean gestureInertia_isStop = true;
-    public volatile boolean pullupInertia_isStop = true;
+    private float mLastX;
+    private float mLastY;
+    private float mfingerRotationX = 0;
+    private float mfingerRotationY = 0;
+    private float mfingerRotationZ = 0;
+    private float[] mMatrixFingerRotationX = new float[16];
+    private float[] mMatrixFingerRotationY = new float[16];
+    private float[] mMatrixFingerRotationZ = new float[16];
+    private volatile boolean gestureInertia_isStop = true;
+    private volatile boolean pullupInertia_isStop = true;
     private volatile boolean operating = false;
     private volatile boolean isNeedAutoScroll = false;
+    public void resetStatus(){
+        mfingerRotationX = 0;
+        mfingerRotationY = 0;
+        mfingerRotationZ = 0;
+        Matrix.setIdentityM(this.mMatrixFingerRotationX, 0);
+        Matrix.setIdentityM(this.mMatrixFingerRotationY, 0);
+        Matrix.setIdentityM(this.mMatrixFingerRotationZ, 0);
+    }
     //*****************************************************************
     //自动旋转相关
     private Timer timer;
