@@ -37,7 +37,7 @@ dependencies {
     })
     compile 'com.android.support:appcompat-v7:22.2.+'
     testCompile 'junit:junit:4.12'
-    compile files('libs/LTPanoramaProc.jar')
+    compile files('libs/LTFishEye.jar')
     compile files('libs/libGinkIO-yuv.jar')
     compile files('libs/libglnkrt.jar')
     compile files('libs/libnativehelper.jar')
