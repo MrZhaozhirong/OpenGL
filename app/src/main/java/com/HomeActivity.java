@@ -31,8 +31,8 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.panorama).setOnClickListener(this);
         findViewById(R.id.fish_eye_180).setOnClickListener(this);
         findViewById(R.id.fish_eye_360).setOnClickListener(this);
-
         findViewById(R.id.split).setOnClickListener(this);
+
     }
 
     @Override

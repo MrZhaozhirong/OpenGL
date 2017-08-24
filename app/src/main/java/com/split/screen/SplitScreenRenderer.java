@@ -46,9 +46,8 @@ public class SplitScreenRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         GLES20.glViewport(0,0,width,height);
-        float ratio = (float) width / (float) height;
 
-        fourEye.onSurfaceChange(ratio);
+        fourEye.onSurfaceChange(width, height);
     }
 
 

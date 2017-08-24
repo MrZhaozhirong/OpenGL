@@ -277,11 +277,13 @@ public class FourEye360 {
         timer.schedule(autoScrollTimerTask, 5000, 10000);
     }
 
-    public void onSurfaceChange(float ratio) {
+    public void onSurfaceChange(int width, int height) {
+        float ratio = (float) width / (float) height;
+
         MatrixHelper.perspectiveM(this.mProjectionMatrix,
                 (float) overture, ratio, 0.1f, 100f);
         MatrixHelper.perspectiveM(splitScreenCanvas.mProjectionMatrix,
-                (float) overture, ratio, 0.1f, 100f);
+                (float) overture/ratio, ratio, 0.1f, 100f);
 
         Matrix.setLookAtM(this.mViewMatrix, 0,
                 0, 0, -1f, //摄像机位置
