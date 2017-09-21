@@ -56,10 +56,9 @@ public class EarthRenderer implements GLSurfaceView.Renderer {
         // 调用此方法计算产生透视投影矩阵
         //MatrixHelper.setProjectFrustum(-ratio,ratio, -1, 1, 0.1f, 400f);
         MatrixHelper.perspectiveM(MatrixHelper.mProjectionMatrix,
-                (float) overture,
-                (float)width/(float)height, 0.1f, 400f);
+                (float) overture, ratio, 0.1f, 400f);
         // 调用此方法产生摄像机9参数位置矩阵
-        MatrixHelper.setCamera(0, 0, 3f, //摄像机位置
+        MatrixHelper.setCamera(0, 0, 4.2f, //摄像机位置
                             0f, 0f, -1.0f, //摄像机目标视点
                             0f, 1.0f, 0.0f);//摄像机头顶方向向量
     }
